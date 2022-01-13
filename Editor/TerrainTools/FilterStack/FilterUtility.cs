@@ -5,32 +5,24 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     public static class FilterUtility
     {
-        /// <summary>
-        /// Enum for indexing built-in Filter types and Shader passes.
-        /// </summary>
         public enum BuiltinPasses
         {
-            Abs = 0,
-            Add = 1,
-            Clamp = 2,
-            Complement = 3,
-            Max = 4,
-            Min = 5,
-            Negate = 6,
-            Power = 7,
-            Remap = 8,
-            Multiply = 9,
+            Abs         = 0,
+            Add         = 1,
+            Clamp       = 2,
+            Complement  = 3,
+            Max         = 4,
+            Min         = 5,
+            Negate      = 6,
+            Power       = 7,
+            Remap       = 8,
+            Multiply    = 9,
         }
 
-        /// <summary>
-        /// The default GraphicsFormat used to evaluate Filters and FilterStacks. This is GraphicsFormat.R16_SFloat when
-        /// supported by the active Graphics API. If it is not supported, ie on Vulkan, OpenGLES3, and OpenGLES2, this
-        /// is GraphicsFormat.R8G8_UNorm.
-        /// </summary>
         public static GraphicsFormat defaultFormat =>
             SystemInfo.IsFormatSupported(GraphicsFormat.R16_SFloat, FormatUsage.Render) &&
             SystemInfo.graphicsDeviceType != GraphicsDeviceType.Vulkan &&
@@ -40,13 +32,11 @@ namespace UnityEditor.TerrainTools
                 : Terrain.heightmapFormat;
 
         private static Material m_builtinMaterial;
-        /// <summary>
-        /// The Material used for built-in Filters like Add and Multiply.
-        /// </summary>
-        public static Material builtinMaterial {
+        public static Material builtinMaterial
+        {
             get
             {
-                if (m_builtinMaterial == null)
+                if(m_builtinMaterial == null)
                 {
                     m_builtinMaterial = new Material(Shader.Find("Hidden/TerrainTools/Filters"));
                 }
@@ -55,16 +45,14 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        /// <summary>
-        /// Material for blend mode passes.
-        /// </summary>
         private static Material m_blendModesMaterial;
-        public static Material blendModesMaterial {
+        public static Material blendModesMaterial
+        {
             get
             {
-                if (m_blendModesMaterial == null)
+                if( m_blendModesMaterial == null )
                 {
-                    m_blendModesMaterial = new Material(Shader.Find("Hidden/TerrainTools/BlendModes"));
+                    m_blendModesMaterial = new Material( Shader.Find( "Hidden/TerrainTools/BlendModes" ) );
                 }
 
                 return m_blendModesMaterial;
@@ -74,35 +62,35 @@ namespace UnityEditor.TerrainTools
         private static Type[] s_filterTypes;
         private static GUIContent[] s_displayNames;
         private static string[] s_paths;
-
+        
         static FilterUtility()
         {
             var gatheredFilterTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(
                 asm =>
                 {
                     Type[] asmTypes = null;
-                    List<Type> types = null;
+                    List< Type > types = null;
 
                     try
                     {
                         asmTypes = asm.GetTypes();
-                        var whereTypes = asmTypes.Where(t =>
-                       {
-                           return t != typeof(Filter) && t.BaseType == typeof(Filter);
-                       });
-
-                        if (whereTypes != null)
+                        var whereTypes = asmTypes.Where( t =>
                         {
-                            types = new List<Type>(whereTypes);
+                            return t != typeof(Filter) && t.BaseType == typeof(Filter);
+                        } );
+                        
+                        if( whereTypes != null )
+                        {
+                            types = new List< Type >( whereTypes );
                         }
                     }
-                    catch (Exception)
+                    catch( Exception )
                     {
                         asmTypes = null;
                         types = null;
                     }
 
-                    return types == null ? new List<Type>() : types;
+                    return types == null ? new List< Type >() : types;
                 }
             );
 
@@ -111,10 +99,10 @@ namespace UnityEditor.TerrainTools
             List<string> paths = new List<string>();
             List<GUIContent> displayNames = new List<GUIContent>();
 
-            for (int i = 0; i < filterTypes.Count; ++i)
+            for(int i = 0; i < filterTypes.Count; ++i)
             {
                 Type filterType = filterTypes[i];
-                Filter tempFilter = (Filter)ScriptableObject.CreateInstance(filterType);
+                Filter tempFilter = ( Filter )ScriptableObject.CreateInstance(filterType);
                 string path = tempFilter.GetDisplayName();
                 string toolTip = tempFilter.GetToolTip();
 
@@ -130,11 +118,11 @@ namespace UnityEditor.TerrainTools
             s_filterTypes = filterTypes.ToArray();
         }
 
-        internal static int GetFilterIndex(string name)
+        public static int GetFilterIndex(string name)
         {
-            for (int i = 0; i < s_paths.Length; ++i)
+            for(int i = 0; i < s_paths.Length; ++i)
             {
-                if (name.CompareTo(s_paths[i]) == 0)
+                if(name.CompareTo(s_paths[i]) == 0)
                 {
                     return i;
                 }
@@ -143,30 +131,20 @@ namespace UnityEditor.TerrainTools
             return -1;
         }
 
-        /// <summary>
-        /// Creates an instance of generic type T where T inherits from Filter
-        /// </summary>
-        /// <typeparam name="T">The type of Filter to create</typeparam>
-        /// <returns></returns>
         public static T CreateInstance<T>() where T : Filter
         {
             return (T)CreateInstance(typeof(T));
         }
 
-        /// <summary>
-        /// Creates an instance of the provided Filter type
-        /// </summary>
-        /// <param name="t">The type of Filter to create</param>
-        /// <returns></returns>
         public static Filter CreateInstance(Type t)
         {
             return ScriptableObject.CreateInstance(t) as Filter;
         }
 
-        internal static int GetFilterTypeCount() => s_filterTypes.Length;
-        internal static string GetFilterPath(int index) => s_paths[index];
-        internal static GUIContent GetDisplayName(int index) => s_displayNames[index];
-        internal static Type GetFilterType(int index) => s_filterTypes[index];
-        internal static List<Type> GetAllFilterTypes() => s_filterTypes.ToList<Type>();
+        public static int           GetFilterTypeCount()        => s_filterTypes.Length;
+        public static string        GetFilterPath(int index)    => s_paths[index];
+        public static GUIContent    GetDisplayName(int index)   => s_displayNames[index];
+        public static Type          GetFilterType(int index)    => s_filterTypes[index];
+        public static List<Type>    GetAllFilterTypes()         => s_filterTypes.ToList<Type>();
     }
 }

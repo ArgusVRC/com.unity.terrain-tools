@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     /// <summary>
     /// A FractalType implementation for a fractal that does nothing. This will give you raw
     /// noise values from the "first" fractal (from Fractal Brownian Motion, for instance) when used
     /// </summary>
-    internal class NoneFractalType : FractalType<NoneFractalType>
+    public class NoneFractalType : FractalType<NoneFractalType>
     {
         public override FractalTypeDescriptor GetDescription() => new FractalTypeDescriptor()
         {

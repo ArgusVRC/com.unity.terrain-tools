@@ -1,10 +1,12 @@
-namespace UnityEditor.TerrainTools
+using System.Collections.Generic;
+
+namespace UnityEditor.Experimental.TerrainAPI
 {
     /// <summary>
     /// A NoiseType implementation for Value noise
     /// </summary>
     [System.Serializable]
-    internal class ValueNoise : NoiseType<ValueNoise>
+    public class ValueNoise : NoiseType<ValueNoise>
     {
         private static NoiseTypeDescriptor desc = new NoiseTypeDescriptor()
         {

@@ -1,24 +1,23 @@
 
 using System.Text;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
-using UnityEngine.TerrainTools;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
-    internal class BrushStrengthVariator : BaseBrushVariator, IBrushStrengthController
-    {
+    public class BrushStrengthVariator : BaseBrushVariator, IBrushStrengthController {
 
         const float kMinBrushStrength = 0.0f;
         const float kMaxBrushStrength = 1.0f;
         const float kDefaultBrushStrength = kMaxBrushStrength;
 
         private float defaultBrushStrength;
-
+        
         class Styles
         {
-            public readonly GUIContent brushStrength = EditorGUIUtility.TrTextContent("Brush Strength");
+            public readonly GUIContent brushStrength = EditorGUIUtility.TrTextContent("Brush Strength", "Strength of the brush paint effect.");
         }
-
+        
         static readonly Styles styles = new Styles();
 
         private readonly TerrainFloatMinMaxValue m_BrushStrength = new TerrainFloatMinMaxValue(styles.brushStrength, kDefaultBrushStrength, kMinBrushStrength, kMaxBrushStrength, true);
@@ -29,17 +28,17 @@ namespace UnityEditor.TerrainTools
 
         private RaycastHit m_LastRaycastHit;
 
-        public float brushStrength {
+        public float brushStrength
+        {
             get { return m_JitterHandler.CalculateValue(m_BrushStrength.value); }
             set { m_BrushStrength.value = Mathf.Clamp(value, kMinBrushStrength, kMaxBrushStrength); }
         }
         public float brushStrengthUI => Mathf.Clamp(m_BrushStrength.value, kMinBrushStrength, kMaxBrushStrength);
 
-        public BrushStrengthVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache, float defaultValue = kDefaultBrushStrength) : base(toolName, eventHandler, terrainCache)
-        {
+        public BrushStrengthVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache, float defaultValue = kDefaultBrushStrength) : base(toolName, eventHandler, terrainCache) {
             this.defaultBrushStrength = defaultValue;
         }
-
+        
         private void BeginAdjustingStrength()
         {
             LockTerrainUnderCursor(true);
@@ -52,25 +51,19 @@ namespace UnityEditor.TerrainTools
             UnlockTerrainUnderCursor();
         }
 
-        public override void OnEnterToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler)
-        {
+        #region IBrushController
+        public override void OnEnterToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler) {
             base.OnEnterToolMode(shortcutHandler);
-
-            if (!canUpdateTerrainUnderCursor)
-            {
-                UnlockTerrainUnderCursor();
-            }
-
+            
             shortcutHandler.AddActions(BrushShortcutType.Strength, BeginAdjustingStrength, EndAdjustingStrength);
-
+            
             m_BrushStrength.value = GetEditorPrefs("TerrainBrushStrength", defaultBrushStrength);
             m_JitterHandler.jitter = GetEditorPrefs("TerrainBrushRandomStrength", 0.0f);
             m_BrushStrength.minValue = GetEditorPrefs("TerrainBrushStrengthMin", 0.0f);
             m_BrushStrength.maxValue = GetEditorPrefs("TerrainBrushStrengthMax", 1.0f);
         }
-
-        public override void OnExitToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler)
-        {
+        
+        public override void OnExitToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler) {            
             SetEditorPrefs("TerrainBrushStrength", m_BrushStrength.value);
             SetEditorPrefs("TerrainBrushStrengthMouseSensitivity", m_BrushStrength.mouseSensitivity);
             SetEditorPrefs("TerrainBrushRandomStrength", m_JitterHandler.jitter);
@@ -78,41 +71,32 @@ namespace UnityEditor.TerrainTools
             SetEditorPrefs("TerrainBrushStrengthMax", m_BrushStrength.maxValue);
 
             shortcutHandler.RemoveActions(BrushShortcutType.Strength);
-
-            EndAdjustingStrength();
-
+            
             base.OnExitToolMode(shortcutHandler);
         }
-
-        public override void OnSceneGUI(Event currentEvent, int controlId, Terrain terrain, IOnSceneGUI editContext)
-        {
+        
+        public override void OnSceneGUI(Event currentEvent, int controlId, Terrain terrain, IOnSceneGUI editContext) {
             Event e = Event.current;
-
+ 
             base.OnSceneGUI(currentEvent, controlId, terrain, editContext);
-
+            
             m_JitterHandler.Update();
-
+            
             if (m_AdjustingStrength)
             {
                 float strength = m_BrushStrength.value;
-
+                
                 strength += 0.001f * e.delta.x;
                 m_BrushStrength.value = strength;
 
                 int strengthPct = Mathf.RoundToInt(100.0f * strength);
-                float pixelPointMultiplier = 1.0f / EditorGUIUtility.pixelsPerPoint;
-                var pos = editContext.sceneView.camera.WorldToScreenPoint(raycastHitUnderCursor.point) * pixelPointMultiplier;
-                Handles.BeginGUI();
-                {
-                    GUI.matrix = Matrix4x4.identity;
-                    var temp = TerrainToolGUIHelper.TempContent($"Strength: {strengthPct}%");
-                    GUI.Label(new Rect(pos.x + 10 * pixelPointMultiplier, (Screen.height * pixelPointMultiplier - pos.y - 60 * pixelPointMultiplier) - EditorGUIUtility.singleLineHeight, s_SceneLabelStyle.CalcSize(temp).x, EditorGUIUtility.singleLineHeight), temp, s_SceneLabelStyle);
-                }
-                Handles.EndGUI();
-                RequestRepaint();
-            }
-            else
-            {
+
+                GUIStyle style = new GUIStyle();
+                style.normal.background = Texture2D.whiteTexture;
+                style.fontSize = 12;
+                Handles.Label(m_LastRaycastHit.point, $"Strength: {strengthPct}%", style);
+                editContext.Repaint();
+            } else {
                 m_LastRaycastHit = editContext.raycastHit;
             }
         }
@@ -123,18 +107,11 @@ namespace UnityEditor.TerrainTools
             return base.OnPaint(terrain, editContext);
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext) {
             base.OnInspectorGUI(terrain, editContext);
-
+            
             m_BrushStrength.DrawInspectorGUI();
-            if (m_BrushStrength.expanded)
-            {
-                EditorGUI.indentLevel++;
-                m_JitterHandler.OnGuiLayout("Allow random variation of brush intensity");
-                EditorGUI.indentLevel--;
-            }
-
+            m_JitterHandler.OnGuiLayout("Allow random variation of brush intensity");
         }
 
         public override void AppendBrushInfo(Terrain terrain, IOnSceneGUI editContext, StringBuilder builder)
@@ -142,34 +119,21 @@ namespace UnityEditor.TerrainTools
             base.AppendBrushInfo(terrain, editContext, builder);
             builder.AppendLine($"Strength = {m_BrushStrength.value:F3}");
         }
+        #endregion
 
-        protected override bool OnBeginModifier()
-        {
-            base.OnBeginModifier();
-
-            LockTerrainUnderCursor(false);
-            return true;
-        }
-
+        #region Mouse Handling
         protected override bool OnModifierUsingMouseWheel(Event mouseEvent, Terrain terrain, IOnSceneGUI editContext)
         {
             base.OnModifierUsingMouseWheel(mouseEvent, terrain, editContext);
 
             Vector2 delta = CalculateMouseDelta(mouseEvent, m_BrushStrength.mouseSensitivity);
             float strength = m_BrushStrength.value;
-
+            
             strength += delta.y;
             m_BrushStrength.value = strength;
 
             return true;
         }
-
-        protected override bool OnEndModifier()
-        {
-            base.OnEndModifier();
-
-            UnlockTerrainUnderCursor();
-            return true;
-        }
+        #endregion
     }
 }

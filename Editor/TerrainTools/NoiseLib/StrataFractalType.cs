@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     /// <summary>
     /// A FractalType implementation for Stratified Noise
     /// </summary>
     [System.Serializable]
-    internal class StrataFractalType : FractalType<StrataFractalType>
+    public class StrataFractalType : FractalType< StrataFractalType >
     {
         [System.Serializable]
         public struct StrataFractalInput
@@ -95,23 +95,23 @@ namespace UnityEditor.TerrainTools
 
             strata.Reset();
 
-            return ToSerializedString(strata);
+            return ToSerializedString( strata );
         }
 
         public override string DoGUI(string serializedString)
         {
-            if (string.IsNullOrEmpty(serializedString))
+            if ( string.IsNullOrEmpty( serializedString ) )
             {
                 serializedString = GetDefaultSerializedString();
             }
 
             // deserialize string
-            StrataFractalInput strata = (StrataFractalInput)FromSerializedString(serializedString);
+            StrataFractalInput strata = ( StrataFractalInput )FromSerializedString( serializedString );
 
             // do gui here
             EditorGUILayout.Space();
-            strata.strataOffset = EditorGUILayout.FloatField(Styles.strataOffset, strata.strataOffset);
-            strata.strataScale = EditorGUILayout.FloatField(Styles.strataScale, strata.strataScale);
+            strata.strataOffset = EditorGUILayout.FloatField( Styles.strataOffset, strata.strataOffset );
+            strata.strataScale = EditorGUILayout.FloatField( Styles.strataScale, strata.strataScale );
             EditorGUILayout.Space();
             strata.octaves = EditorGUILayout.Slider(Styles.octaves, strata.octaves, strata.octavesMinMax.x, strata.octavesMinMax.y);
             strata.amplitude = EditorGUILayout.Slider(Styles.amplitude, strata.amplitude, strata.amplitudeMinMax.x, strata.amplitudeMinMax.y);
@@ -131,15 +131,15 @@ namespace UnityEditor.TerrainTools
                 }
                 EditorGUI.indentLevel--;
             }
-
+            
             strata.warpEnabled = toggled;
 
             return ToSerializedString(strata);
         }
 
-        private void DomainWarpSettingsGUI(ref StrataFractalInput strata)
+        private void DomainWarpSettingsGUI( ref StrataFractalInput strata )
         {
-            using (new EditorGUI.DisabledScope(!strata.warpEnabled))
+            using(new EditorGUI.DisabledScope( !strata.warpEnabled ) )
             {
                 strata.warpIterations = EditorGUILayout.Slider(Styles.warpIterations, strata.warpIterations, strata.warpIterationsMinMax.x, strata.warpIterationsMinMax.y);
                 strata.warpStrength = EditorGUILayout.Slider(Styles.warpStrength, strata.warpStrength, strata.warpStrengthMinMax.x, strata.warpStrengthMinMax.y);
@@ -168,23 +168,23 @@ namespace UnityEditor.TerrainTools
             mat.SetFloat("_StrataWarpStrength", strata.warpStrength);
             mat.SetVector("_StrataWarpOffsets", strata.warpOffsets);
 
-            mat.SetFloat("_StrataStrataOffset", strata.strataOffset);
-            mat.SetFloat("_StrataStrataScale", strata.strataScale);
+            mat.SetFloat("_StrataStrataOffset", strata.strataOffset );
+            mat.SetFloat("_StrataStrataScale", strata.strataScale );
         }
 
         public override string ToSerializedString(object target)
         {
-            if (target == null)
+            if(target == null)
             {
                 return null;
             }
 
-            if (!(target is StrataFractalInput))
+            if(!(target is StrataFractalInput))
             {
                 Debug.LogError($"Attempting to serialize an object that is not of type {typeof(StrataFractalInput)}");
                 return null;
             }
-
+            
             StrataFractalInput strata = (StrataFractalInput)target;
 
             string serializedString = JsonUtility.ToJson(strata);
@@ -194,7 +194,7 @@ namespace UnityEditor.TerrainTools
 
         public override object FromSerializedString(string serializedString)
         {
-            if (string.IsNullOrEmpty(serializedString))
+            if(string.IsNullOrEmpty(serializedString))
             {
                 serializedString = GetDefaultSerializedString();
             }

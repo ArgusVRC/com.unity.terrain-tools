@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     /// <summary>
     /// A NoiseType implementation for Billow noise
     /// </summary>
     [System.Serializable]
-    internal class BillowNoise : NoiseType<BillowNoise>
+    public class BillowNoise : NoiseType<BillowNoise>
     {
         private static NoiseTypeDescriptor desc =  new NoiseTypeDescriptor()
         {

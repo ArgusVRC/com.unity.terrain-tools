@@ -1,20 +1,22 @@
 using UnityEngine;
+using UnityEditor;
 using System;
 using System.Reflection;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
+using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using System.Linq;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     /// <summary>
     /// Class responsible for loading all the NoiseType and FractalType implementations
     /// and generating the associated shaders
     /// </summary>
     [InitializeOnLoad]
-    internal static partial class NoiseLib
+    public static partial class NoiseLib
     {
         private static INoiseType[]     s_noiseTypes;
         private static string[]         s_noiseNames;
@@ -38,6 +40,12 @@ namespace UnityEditor.TerrainTools
             GenerateHeaderFiles();
             GenerateShaders();
         }
+
+        /*============================================================================================
+        
+            UI Helpers
+        
+        ============================================================================================*/
         
         /// <summary>
         /// Renders a Popup using EditorGUILayout.Popup for all loaded NoiseType implementations
@@ -82,6 +90,12 @@ namespace UnityEditor.TerrainTools
 
             return selectedName;
         }
+
+        /*==========================================================================================
+        
+            Get Noise
+        
+        ==========================================================================================*/
 
         // TODO(wyatt): this needs to be read-only
         private static INoiseType[] GetAllNoiseTypes()
@@ -160,6 +174,12 @@ namespace UnityEditor.TerrainTools
             return index;
         }
 
+        /*==========================================================================================
+        
+            Get Fractals
+        
+        ==========================================================================================*/
+
         // TODO(wyatt): this needs to be a read-only collection
         private static IFractalType[] GetAllFractalTypes()
         {
@@ -175,7 +195,7 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         /// Returns the Singleton instance for the specified FractalType implementation
         /// </summary>
-        internal static IFractalType GetFractalTypeInstance(string fractalName)
+        public static IFractalType GetFractalTypeInstance(string fractalName)
         {
             int index = GetFractalIndex(fractalName);
 
@@ -186,7 +206,7 @@ namespace UnityEditor.TerrainTools
         /// Returns the Singleton instance for the specified FractalType
         /// </summary>
         /// <param name="t"> The Type for the FractalType implementation </param>
-        internal static IFractalType GetFractalTypeInstance(Type t)
+        public static IFractalType GetFractalTypeInstance(Type t)
         {
             IFractalType[] instances = s_fractalTypes;
 
@@ -236,6 +256,12 @@ namespace UnityEditor.TerrainTools
 
             return -1;
         }
+        
+        /*=========================================================================
+
+            Gather Types
+        
+        =========================================================================*/
 
         private static bool IsSubclassOfGenericType(Type t, Type genericType)
         {
@@ -356,6 +382,12 @@ namespace UnityEditor.TerrainTools
             s_fractalTypes = instances.ToArray();
             s_fractalNames = names.ToArray();
         }
+
+        /*==========================================================================================
+
+            Load Source
+        
+        ==========================================================================================*/
 
         private static string[] LoadNoiseSource(INoiseType[] noiseTypes)
         {
@@ -528,6 +560,12 @@ namespace UnityEditor.TerrainTools
             return ret;
         }
 
+        /*==========================================================================================
+
+            Generate HLSL
+            
+        ==========================================================================================*/
+
         /// <summary>
         /// Forces generation of the NoiseType and FractalType variant HLSL header files
         /// </summary>
@@ -633,6 +671,12 @@ namespace UnityEditor.TerrainTools
 
             // UnityEditor.AssetDatabase.Refresh();
         }
+
+        /*==========================================================================================
+
+            Generate Tool Shaders
+        
+        ==========================================================================================*/
 
         /// <summary>
         /// Returns a Material associated with the provided Type of NoiseShaderGenerator

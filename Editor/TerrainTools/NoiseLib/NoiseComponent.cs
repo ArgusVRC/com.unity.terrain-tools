@@ -1,10 +1,10 @@
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.TerrainTools;
+using UnityEditor.Experimental.TerrainAPI;
 
-namespace UnityEngine.TerrainTools
+namespace UnityEngine.Experimental.TerrainAPI
 {
-    internal class NoiseComponent : MonoBehaviour
+    public class NoiseComponent : MonoBehaviour
     {
         public Material mat;
         public NoiseSettings noiseSettings;

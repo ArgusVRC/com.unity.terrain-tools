@@ -1,15 +1,14 @@
 using UnityEngine;
-using UnityEngine.TerrainTools;
+using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     internal class SmoothHeightTool : TerrainPaintTool<SmoothHeightTool>
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Smooth Tool", typeof(TerrainToolShortcutContext), KeyCode.F3)]
-        static void SelectShortcut(ShortcutArguments args)
-        {
+        static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<SmoothHeightTool>();
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Smooth Tool");
@@ -18,10 +17,11 @@ namespace UnityEditor.TerrainTools
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI {
+        private IBrushUIGroup commonUI
+        {
             get
             {
-                if (m_commonUI == null)
+                if( m_commonUI == null )
                 {
                     LoadSettings();
                     m_commonUI = new DefaultBrushUIGroup("SmoothTool", UpdateAnalyticParameters);
@@ -40,19 +40,16 @@ namespace UnityEditor.TerrainTools
         public int m_KernelSize = 1; //blur kernel size
 
         Material m_Material = null;
-        Material GetMaterial()
-        {
+        Material GetMaterial() {
             if (m_Material == null)
                 m_Material = new Material(Shader.Find("Hidden/TerrainTools/SmoothHeight"));
             return m_Material;
         }
 
         ComputeShader m_DiffusionCS = null;
-        ComputeShader GetDiffusionShader()
-        {
-            if (m_DiffusionCS == null)
-            {
-                m_DiffusionCS = ComputeUtility.GetShader("Diffusion");
+        ComputeShader GetDiffusionShader() {
+            if(m_DiffusionCS == null) {
+                m_DiffusionCS = (ComputeShader)Resources.Load("Diffusion");
             }
             return m_DiffusionCS;
         }
@@ -62,19 +59,17 @@ namespace UnityEditor.TerrainTools
             return toolName;
         }
 
-        public override string GetDescription()
+        public override string GetDesc()
         {
             return Styles.description.text;
         }
 
-        public override void OnEnterToolMode()
-        {
+        public override void OnEnterToolMode() {
             base.OnEnterToolMode();
             commonUI.OnEnterToolMode();
         }
 
-        public override void OnExitToolMode()
-        {
+        public override void OnExitToolMode() {
             base.OnExitToolMode();
             commonUI.OnExitToolMode();
         }
@@ -89,8 +84,8 @@ namespace UnityEditor.TerrainTools
             if (m_ShowControls)
             {
                 EditorGUILayout.BeginVertical("GroupBox");
-                m_direction = EditorGUILayout.Slider(Styles.direction, m_direction, -1.0f, 1.0f);
-                m_KernelSize = EditorGUILayout.IntSlider(Styles.kernelSize, m_KernelSize, 1, terrain.terrainData.heightmapResolution / 2 - 1);
+                    m_direction = EditorGUILayout.Slider(Styles.direction, m_direction, -1.0f, 1.0f);
+                    m_KernelSize = EditorGUILayout.IntSlider(Styles.kernelSize, m_KernelSize, 1, terrain.terrainData.heightmapResolution / 2 - 1);
                 EditorGUILayout.EndVertical();
             }
 
@@ -111,23 +106,35 @@ namespace UnityEditor.TerrainTools
 
         private void ApplyBrushInternal(Terrain terrain, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
         {
-            RenderTexture prev = RenderTexture.active;
+            /*
+            ComputeShader cs = GetDiffusionShader();
 
+            int kernel = cs.FindKernel("Diffuse");
+            cs.SetFloat("dt", 0.1f);
+            cs.SetFloat("diff", 0.01f);
+            cs.SetVector("texDim", new Vector4(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0.0f, 0.0f));
+            cs.SetTexture(kernel, "InputTex", paintContext.sourceRenderTexture);
+            cs.SetTexture(kernel, "OutputTex", paintContext.destinationRenderTexture);
+            cs.Dispatch(kernel, paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 1);
+            */
+
+            RenderTexture prev = RenderTexture.active;
+            
             Material mat = GetMaterial();
             var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
             Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
             Vector4 brushParams = new Vector4(Mathf.Clamp(brushStrength, 0.0f, 1.0f), 0.0f, 0.0f, 0.0f);
-
+            
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
             Vector4 smoothWeights = new Vector4(
                 Mathf.Clamp01(1.0f - Mathf.Abs(m_direction)),   // centered
                 Mathf.Clamp01(-m_direction),                    // min
                 Mathf.Clamp01(m_direction),                     // max
-                0);
+                0);                                             
             mat.SetInt("_KernelSize", (int)Mathf.Max(1, m_KernelSize)); // kernel size
             mat.SetVector("_SmoothWeights", smoothWeights);
-
+            
             var texelCtx = Utility.CollectTexelValidity(terrain, brushXform.GetBrushXYBounds());
             Utility.SetupMaterialForPaintingWithTexelValidityContext(paintContext, texelCtx, brushXform, mat);
 
@@ -145,7 +152,7 @@ namespace UnityEditor.TerrainTools
             RTUtils.Release(tmpRT);
             RTUtils.Release(brushMask);
             texelCtx.Cleanup();
-
+            
             RenderTexture.active = prev;
             RenderTexture.ReleaseTemporary(brushMask);
         }
@@ -170,18 +177,15 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
-            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SmoothHeight", editContext.brushTexture))
+            using(IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SmoothHeight", editContext.brushTexture))
             {
-                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
+                    Material material = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
-                    previewMaterial.SetVector("_JitterOffset", Vector3.zero);
-
-                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
-                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
-                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
-                        editContext.brushTexture, brushXform, previewMaterial, 0);
+                
+                    material.SetVector("_JitterOffset", Vector3.zero);
+                    brushRender.RenderBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushXform, material, 0);
 
                     // draw result preview
                     {
@@ -190,12 +194,9 @@ namespace UnityEditor.TerrainTools
                         // restore old render target
                         RenderTexture.active = ctx.oldRenderTexture;
 
-                        previewMaterial.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
-                        TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.DestinationRenderTexture,
-                            editContext.brushTexture, brushXform, previewMaterial, 1);
+                        material.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
+                        brushRender.RenderBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture, brushXform, material, 1);
                     }
-
-                    texelCtx.Cleanup();
                 }
             }
         }
@@ -203,16 +204,15 @@ namespace UnityEditor.TerrainTools
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
             commonUI.OnPaint(terrain, editContext);
+            
+            if(!commonUI.allowPaint) { return true; }
 
-            if (!commonUI.allowPaint)
-            { return true; }
-
-            using (IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "SmoothHeight", editContext.brushTexture))
+            using(IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "SmoothHeight", editContext.brushTexture))
             {
-                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds());
-
+                
                     ApplyBrushInternal(terrain, paintContext, commonUI.brushStrength, editContext.brushTexture, brushXform);
                 }
             }
@@ -237,10 +237,11 @@ namespace UnityEditor.TerrainTools
             m_direction = EditorPrefs.GetFloat("Unity.TerrainTools.SmoothHeight.Verticality", 0.0f);
         }
 
-        //Analytics Setup
+        #region Analytics
         private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.direction.text, Value = m_direction},
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.kernelSize.text, Value = m_KernelSize},
         };
+        #endregion
     }
 }

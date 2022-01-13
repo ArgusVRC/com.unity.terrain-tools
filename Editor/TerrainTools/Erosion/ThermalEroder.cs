@@ -1,39 +1,38 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
+using UnityEditor.Experimental.TerrainAPI;
 
-namespace UnityEditor.TerrainTools.Erosion
-{
+namespace Erosion {
 
     [Serializable]
-    internal class ThermalEroder : ITerrainEroder
-    {
+    public class ThermalEroder : ITerrainEroder {
+        #region Resources
         Material m_Material = null;
-        Material GetPaintMaterial()
-        {
+        Material GetPaintMaterial() {
             if (m_Material == null)
                 m_Material = new Material(Shader.Find("SimpleHeightBlend"));
             return m_Material;
         }
 
         Material m_SplatMaterial = null;
-        Material GetSplatMaterial()
-        {
+        Material GetSplatMaterial() {
             if (m_SplatMaterial == null)
                 m_SplatMaterial = new Material(Shader.Find("SedimentSplat"));
             return m_SplatMaterial;
         }
 
         ComputeShader m_ComputeShader = null;
-        ComputeShader GetComputeShader()
-        {
-            if (m_ComputeShader == null)
-            {
-                m_ComputeShader = ComputeUtility.GetShader("Thermal");
+        ComputeShader GetComputeShader() {
+            if (m_ComputeShader == null) {
+                m_ComputeShader = (ComputeShader)Resources.Load("Thermal");
             }
             return m_ComputeShader;
         }
 
+        #endregion
+
+        #region Simulation Params
         [SerializeField]
         public int m_AddHeightAmt = 10;
         [SerializeField]
@@ -51,8 +50,10 @@ namespace UnityEditor.TerrainTools.Erosion
         public int m_ThermalIterations = 50;
         [SerializeField]
         public int m_MatPreset = 8; //dry sand
+        #endregion
 
         public Dictionary<string, RenderTexture> inputTextures { get; set; } = new Dictionary<string, RenderTexture>();
+        public Dictionary<string, RenderTexture> outputTextures { get; private set; } = new Dictionary<string, RenderTexture>();
 
         public void OnEnable() { }
 
@@ -64,27 +65,45 @@ namespace UnityEditor.TerrainTools.Erosion
             m_ReposeJitter = 0;
         }
 
-        public void ErodeHeightmap(RenderTexture dest, Vector3 terrainDimensions, Rect domainRect, Vector2 texelSize, bool invertEffect = false)
-        {
-            ErodeHelper(dest, terrainDimensions, domainRect, texelSize, invertEffect, false);
+
+        private void ResetOutputs(int width, int height) {
+            foreach(var rt in outputTextures) {
+                RenderTexture.ReleaseTemporary(rt.Value);
+            }
+            outputTextures.Clear();
+
+            RenderTexture heightRT = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
+            heightRT.enableRandomWrite = true;
+            outputTextures["Height"] = heightRT;
         }
 
-        private void ErodeHelper(RenderTexture dest, Vector3 terrainScale, Rect domainRect, Vector2 texelSize, bool invertEffect, bool lowRes)
-        {
+        public void ErodeHeightmap(Vector3 terrainDimensions, Rect domainRect, Vector2 texelSize, bool invertEffect = false) {
+            ResetOutputs((int)domainRect.width, (int)domainRect.height);
+            ErodeHelper(terrainDimensions, domainRect, texelSize, invertEffect, false);
+        }
+
+        private void ErodeHelper(Vector3 terrainScale, Rect domainRect, Vector2 texelSize, bool invertEffect, bool lowRes) {
             ComputeShader cs = GetComputeShader();
             RenderTexture prevRT = RenderTexture.active;
 
             int[] numWorkGroups = { 1, 1, 1 };
 
             //this one is mandatory
-            if (!inputTextures.ContainsKey("Height"))
-            {
+            if (!inputTextures.ContainsKey("Height")) {
                 throw (new Exception("No input heightfield specified!"));
             }
 
             //figure out what size we need our render targets to be
-            int xRes = inputTextures["Height"].width;
-            int yRes = inputTextures["Height"].height;
+            int xRes = (int)inputTextures["Height"].width;
+            int yRes = (int)inputTextures["Height"].height;
+
+            /*
+            int rx = xRes - (numWorkGroups[0] * (xRes / numWorkGroups[0]));
+            int ry = yRes - (numWorkGroups[1] * (yRes / numWorkGroups[1]));
+
+            xRes += numWorkGroups[0] - rx;
+            yRes += numWorkGroups[1] - ry;
+            */
 
             var heightmapRT0 = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
             var heightmapRT1 = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
@@ -93,7 +112,7 @@ namespace UnityEditor.TerrainTools.Erosion
             var hardnessRT = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
             var reposeAngleRT = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
             var collisionRT = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
-
+            
             //clear the render textures (also calls rt.Create())
             Graphics.Blit(inputTextures["Height"], heightmapRT0);
             Graphics.Blit(inputTextures["Height"], heightmapRT1);
@@ -141,7 +160,7 @@ namespace UnityEditor.TerrainTools.Erosion
                 heightmapRT1 = temp;
             }
 
-            Graphics.Blit((m_ThermalIterations - 1) % 2 == 0 ? heightmapRT1 : heightmapRT0, dest);
+            Graphics.Blit((m_ThermalIterations - 1) % 2 == 0 ? heightmapRT1 : heightmapRT0, outputTextures["Height"]);
 
             //reset the active render texture so weird stuff doesn't happen (Blit overwrites this)
             RenderTexture.active = prevRT;

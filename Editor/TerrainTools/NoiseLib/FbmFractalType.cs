@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     /// <summary>
     /// A FractalType implementation for Fractal Brownian Motion
     /// </summary>
     [System.Serializable]
-    internal class FbmFractalType : FractalType<FbmFractalType>
+    public class FbmFractalType : FractalType<FbmFractalType>
     {
         [System.Serializable]
         public struct FbmFractalInput
@@ -118,7 +118,7 @@ namespace UnityEditor.TerrainTools
                 }
                 EditorGUI.indentLevel--;
             }
-
+            
             fbm.warpEnabled = toggled;
 
             return ToSerializedString(fbm);
@@ -126,7 +126,7 @@ namespace UnityEditor.TerrainTools
 
         private void DomainWarpSettingsGUI(ref FbmFractalInput fbm)
         {
-            using (new EditorGUI.DisabledScope(!fbm.warpEnabled))
+            using(new EditorGUI.DisabledScope(!fbm.warpEnabled))
             {
                 fbm.warpIterations = EditorGUILayout.Slider(Styles.warpIterations, fbm.warpIterations, fbm.warpIterationsMinMax.x, fbm.warpIterationsMinMax.y);
                 fbm.warpStrength = EditorGUILayout.Slider(Styles.warpStrength, fbm.warpStrength, fbm.warpStrengthMinMax.x, fbm.warpStrengthMinMax.y);
@@ -158,17 +158,17 @@ namespace UnityEditor.TerrainTools
 
         public override string ToSerializedString(object target)
         {
-            if (target == null)
+            if(target == null)
             {
                 return null;
             }
 
-            if (!(target is FbmFractalInput))
+            if(!(target is FbmFractalInput))
             {
                 Debug.LogError($"Attempting to serialize an object that is not of type {typeof(FbmFractalInput)}");
                 return null;
             }
-
+            
             FbmFractalInput fbm = (FbmFractalInput)target;
 
             string serializedString = JsonUtility.ToJson(fbm);
@@ -178,7 +178,7 @@ namespace UnityEditor.TerrainTools
 
         public override object FromSerializedString(string serializedString)
         {
-            if (string.IsNullOrEmpty(serializedString))
+            if(string.IsNullOrEmpty(serializedString))
             {
                 serializedString = GetDefaultSerializedString();
             }

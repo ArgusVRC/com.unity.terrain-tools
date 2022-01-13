@@ -1,15 +1,14 @@
 using UnityEngine;
-using UnityEngine.TerrainTools;
+using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
-    internal class SlopeFlattenTool : TerrainPaintTool<SlopeFlattenTool>
+    public class SlopeFlattenTool : TerrainPaintTool<SlopeFlattenTool>
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Slope Flatten Tool", typeof(TerrainToolShortcutContext))]
-        static void SelectShortcut(ShortcutArguments args)
-        {
+        static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<SlopeFlattenTool>();
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Slope Flatten Tool");
@@ -18,19 +17,20 @@ namespace UnityEditor.TerrainTools
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI {
+        private IBrushUIGroup commonUI
+        {
             get
             {
-                if (m_commonUI == null)
+                if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup("SlopeFlattenTool");
+                    m_commonUI = new DefaultBrushUIGroup( "SlopeFlattenTool" );
                     m_commonUI.OnEnterToolMode();
                 }
 
                 return m_commonUI;
             }
         }
-
+        
 
         Material m_Material = null;
         Material GetPaintMaterial()
@@ -45,19 +45,17 @@ namespace UnityEditor.TerrainTools
             return "Effects/Slope Flatten";
         }
 
-        public override string GetDescription()
+        public override string GetDesc()
         {
             return "Flattens terrain while maintaining average slope.";
         }
 
-        public override void OnEnterToolMode()
-        {
+        public override void OnEnterToolMode() {
             base.OnEnterToolMode();
             commonUI.OnEnterToolMode();
         }
 
-        public override void OnExitToolMode()
-        {
+        public override void OnExitToolMode() {
             base.OnExitToolMode();
             commonUI.OnExitToolMode();
         }
@@ -82,17 +80,13 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
-            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SlopeFlatten", editContext.brushTexture))
+            using(IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SlopeFlatten", editContext.brushTexture))
             {
-                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
-                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
-                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
-                        editContext.brushTexture, brushXform, previewMaterial, 0);
-                    texelCtx.Cleanup();
+                
+                    brushRender.RenderBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
                 }
             }
         }
@@ -111,11 +105,10 @@ namespace UnityEditor.TerrainTools
         {
             commonUI.OnPaint(terrain, editContext);
 
-            if (commonUI.allowPaint)
-            {
-                using (IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "SlopeFlatten", editContext.brushTexture))
+            if (commonUI.allowPaint) {
+                using(IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "SlopeFlatten", editContext.brushTexture))
                 {
-                    if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                    if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
                         PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
                         Material mat = GetPaintMaterial();

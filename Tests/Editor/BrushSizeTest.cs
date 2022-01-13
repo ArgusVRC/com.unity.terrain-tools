@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEditor;
-using UnityEditor.TerrainTools;
+using UnityEditor.Experimental.TerrainAPI;
 using UnityEngine;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     [TestFixture]
     public class BrushSizeTest

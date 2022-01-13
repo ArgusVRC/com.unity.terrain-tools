@@ -1,9 +1,9 @@
 using UnityEngine;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
-    internal class AddFilter : Filter
+    public class AddFilter : Filter
     {
         [SerializeField]
         public float value;

@@ -1,13 +1,13 @@
 using UnityEngine;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
-    internal class MaxFilter : Filter
+    public class MaxFilter : Filter
     {
         [SerializeField]
         public float value;
-
+        
         public override string GetDisplayName()
         {
             return "Max";
@@ -22,7 +22,7 @@ namespace UnityEditor.TerrainTools
         {
             FilterUtility.builtinMaterial.SetFloat("_Max", value);
 
-            Graphics.Blit(sourceRenderTexture, destinationRenderTexture, FilterUtility.builtinMaterial, (int)FilterUtility.BuiltinPasses.Max);
+            Graphics.Blit( sourceRenderTexture, destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Max );
         }
 
         protected override void OnDrawGUI(Rect rect, FilterContext filterContext)

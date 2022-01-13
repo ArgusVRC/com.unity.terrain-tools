@@ -1,8 +1,8 @@
 using UnityEngine;
-using UnityEngine.TerrainTools;
+using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     //[FilePathAttribute("Library/TerrainTools/SetHeight", FilePathAttribute.Location.ProjectFolder)]
     internal class SetHeightTool : TerrainPaintTool<SetHeightTool>
@@ -11,8 +11,7 @@ namespace UnityEditor.TerrainTools
 
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Set Height Tool", typeof(TerrainToolShortcutContext))]
-        static void SelectShortcut(ShortcutArguments args)
-        {
+        static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<SetHeightTool>();
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Set Height Tool");
@@ -21,10 +20,11 @@ namespace UnityEditor.TerrainTools
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI {
+        private IBrushUIGroup commonUI
+        {
             get
             {
-                if (m_commonUI == null)
+                if( m_commonUI == null )
                 {
                     LoadSettings();
                     m_commonUI = new DefaultBrushUIGroup("SetHeightTool", UpdateAnalyticParameters);
@@ -35,14 +35,6 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        /// <summary>
-        /// Allows overriding for unit testing purposes
-        /// </summary>
-        /// <param name="uiGroup"></param>
-        internal void ChangeCommonUI(IBrushUIGroup uiGroup)
-        {
-            m_commonUI = uiGroup;
-        }
 
         Material m_Material = null;
         Material GetPaintMaterial()
@@ -63,7 +55,7 @@ namespace UnityEditor.TerrainTools
             World,
             Local
         }
-
+        
         [SerializeField]
         HeightSpace m_HeightSpace;
 #endif
@@ -83,19 +75,17 @@ namespace UnityEditor.TerrainTools
             return toolName;
         }
 
-        public override string GetDescription()
+        public override string GetDesc()
         {
             return Styles.description.text;
         }
 
-        public override void OnEnterToolMode()
-        {
+        public override void OnEnterToolMode() {
             base.OnEnterToolMode();
             commonUI.OnEnterToolMode();
         }
 
-        public override void OnExitToolMode()
-        {
+        public override void OnExitToolMode() {
             base.OnExitToolMode();
             commonUI.OnExitToolMode();
         }
@@ -121,19 +111,16 @@ namespace UnityEditor.TerrainTools
             }
 
             Texture brushTexture = editContext.brushTexture;
-
-            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SetHeightTool", brushTexture))
+            
+            using(IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SetHeightTool", brushTexture))
             {
-                if (brushRender.CalculateBrushTransform(out BrushTransform brushTransform))
+                if(brushRender.CalculateBrushTransform(out BrushTransform brushTransform))
                 {
                     Rect brushBounds = brushTransform.GetBrushXYBounds();
                     PaintContext paintContext = brushRender.AcquireHeightmap(false, brushBounds, 1);
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
+                    Material material = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
 
-                    var texelCtx = Utility.CollectTexelValidity(paintContext.originTerrain, brushTransform.GetBrushXYBounds());
-                    Utility.SetupMaterialForPaintingWithTexelValidityContext(paintContext, texelCtx, brushTransform, previewMaterial);
-                    TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.SourceRenderTexture,
-                        editContext.brushTexture, brushTransform, previewMaterial, 0);
+                    brushRender.RenderBrushPreview(paintContext, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushTransform, material, 0);
 
                     // draw result preview
                     {
@@ -142,12 +129,10 @@ namespace UnityEditor.TerrainTools
                         // restore old render target
                         RenderTexture.active = paintContext.oldRenderTexture;
 
-                        previewMaterial.SetTexture("_HeightmapOrig", paintContext.sourceRenderTexture);
-                        TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.DestinationRenderTexture,
-                            editContext.brushTexture, brushTransform, previewMaterial, 1);
-                    }
+                        material.SetTexture("_HeightmapOrig", paintContext.sourceRenderTexture);
 
-                    texelCtx.Cleanup();
+                        brushRender.RenderBrushPreview(paintContext, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture, brushTransform, material, 1);
+                    }
                 }
             }
         }
@@ -179,9 +164,9 @@ namespace UnityEditor.TerrainTools
         {
             commonUI.OnPaint(terrain, editContext);
 
-            if (commonUI.allowPaint)
+            if(commonUI.allowPaint)
             {
-                if (Event.current != null && Event.current.control)
+                if(Event.current.control)
                 {
                     Terrain currentTerrain = commonUI.terrainUnderCursor;
                     m_TargetHeight = currentTerrain.terrainData.GetInterpolatedHeight(editContext.uv.x, editContext.uv.y) + currentTerrain.GetPosition().y;
@@ -192,14 +177,14 @@ namespace UnityEditor.TerrainTools
                 else
                 {
                     Texture brushTexture = editContext.brushTexture;
-
-                    using (IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "SetHeightTool", brushTexture))
+                    
+                    using(IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "SetHeightTool", brushTexture))
                     {
-                        if (brushRender.CalculateBrushTransform(out BrushTransform brushTransform))
+                        if(brushRender.CalculateBrushTransform(out BrushTransform brushTransform))
                         {
                             Rect brushBounds = brushTransform.GetBrushXYBounds();
                             PaintContext paintContext = brushRender.AcquireHeightmap(true, brushBounds);
-
+                        
                             ApplyBrushInternal(paintContext, brushRender, commonUI.brushStrength, brushTexture, brushTransform, terrain);
                         }
                     }
@@ -209,7 +194,7 @@ namespace UnityEditor.TerrainTools
             return true;
         }
 
-        internal void Flatten(Terrain terrain)
+        void Flatten(Terrain terrain)
         {
             Undo.RegisterCompleteObjectUndo(terrain.terrainData, "Set Height - Flatten Tile");
 
@@ -238,23 +223,19 @@ namespace UnityEditor.TerrainTools
         {
             Terrain[] terrains = TerrainFillUtility.GetTerrainsInGroup(terrain);
 
-            for (int i = 0; i < terrains.Length; ++i)
+            for(int i = 0; i < terrains.Length; ++i)
             {
                 Flatten(terrains[i]);
             }
         }
 
-        internal void SetTargetHeight(float targetHeight)
-        {
-            m_TargetHeight = targetHeight;
-        }
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            s_showToolControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controlHeader, s_showToolControls, () => { m_TargetHeight = 0; });
+            s_showToolControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controlHeader, s_showToolControls, ()=> { m_TargetHeight = 0; });
 
             if (s_showToolControls)
             {
@@ -297,7 +278,7 @@ namespace UnityEditor.TerrainTools
                         Save(true);
                         SaveSetting();
                         TerrainToolsAnalytics.OnParameterChange();
-                    }
+                    }					
                 }
                 EditorGUILayout.EndVertical();
             }
@@ -313,12 +294,13 @@ namespace UnityEditor.TerrainTools
             m_TargetHeight = EditorPrefs.GetFloat("Unity.TerrainTools.SetHeight.Height", 0.0f);
         }
 
-        //Analytics Setup
+        #region Analytics
         private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.height.text, Value = m_TargetHeight},
 #if UNITY_2019_3_OR_NEWER
             new TerrainToolsAnalytics.BrushParameter<string>{Name = Styles.space.text, Value = m_HeightSpace.ToString()},
 #endif
         };
+        #endregion
     }
 }

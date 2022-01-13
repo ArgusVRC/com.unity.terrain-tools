@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.TerrainTools
+namespace UnityEngine.Experimental.TerrainAPI
 {
-    [Serializable]
-    internal class TerrainPalette : ScriptableObject
-    {
-        public List<TerrainLayer> PaletteLayers = new List<TerrainLayer>();
-    }
+	[Serializable]
+	public class TerrainPalette : ScriptableObject
+	{
+		public List<TerrainLayer> PaletteLayers = new List<TerrainLayer>();
+	}
 }

@@ -2,36 +2,14 @@ using System;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
-using UnityEngine.Rendering;
-using UnityEngine.TestTools;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
-    [InitializeOnLoad]
-    public class RenderTextureTestOnload
-    {
-        static RenderTextureTestOnload()
-        {
-            var ignoreTests = !SystemInfo.IsFormatSupported(RenderTextureTests.testFormat, FormatUsage.LoadStore);
-
-            ConditionalIgnoreAttribute.AddConditionalIgnoreMapping("IgnoreTest", ignoreTests);
-        }
-    }
-
-
     [TestFixture(Category = "RTUtils")]
     public class RenderTextureTests
     {
-        internal static GraphicsFormat testFormat =>
-            SystemInfo.IsFormatSupported(GraphicsFormat.R16_SFloat, FormatUsage.Render) &&
-            SystemInfo.graphicsDeviceType != GraphicsDeviceType.Vulkan &&
-            SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES3 &&
-            SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2
-                ? GraphicsFormat.R16_SFloat
-                : Terrain.heightmapFormat;
-        
-        RenderTextureDescriptor descriptor => RTUtils.GetDescriptor(512, 512, 0, testFormat);
-        RenderTextureDescriptor descriptorRW => RTUtils.GetDescriptorRW(512, 512, 0, testFormat);
+        RenderTextureDescriptor descriptor => RTUtils.GetDescriptor(512, 512, 0, GraphicsFormat.R16_UNorm);
+        RenderTextureDescriptor descriptorRW => RTUtils.GetDescriptorRW(512, 512, 0, GraphicsFormat.R16_UNorm);
         private ulong m_PrevTextureMemory;
         private int m_PrevRTHandleCount;
         
@@ -56,20 +34,20 @@ namespace UnityEditor.TerrainTools
             
             Assert.True(desc.width == 512);
             Assert.True(desc.height == 512);
-            Assert.True(desc.graphicsFormat == testFormat);
+            Assert.True(desc.graphicsFormat == GraphicsFormat.R16_UNorm);
             Assert.True(desc.sRGB == false);
             Assert.True(desc.mipCount == 0);
             Assert.True(desc.useMipMap == false);
         }
 
-        [Test, ConditionalIgnore("IgnoreTest", "Test ignored.")]
+        [Test]
         public void RW_Descriptor_Is_Correct()
         {
             var desc = descriptorRW;
             
             Assert.True(desc.width == 512);
             Assert.True(desc.height == 512);
-            Assert.True(desc.graphicsFormat == testFormat);
+            Assert.True(desc.graphicsFormat == GraphicsFormat.R16_UNorm);
             Assert.True(desc.sRGB == false);
             Assert.True(desc.mipCount == 0);
             Assert.True(desc.useMipMap == false);
@@ -85,7 +63,7 @@ namespace UnityEditor.TerrainTools
             RTUtils.Release(handle);
         }
 
-        [Test, ConditionalIgnore("IgnoreTest", "Test ignored.")]
+        [Test]
         public void RTHandleRW_Temporary_Is_Not_Null()
         {
             var handle = RTUtils.GetTempHandle(descriptorRW);
@@ -94,7 +72,7 @@ namespace UnityEditor.TerrainTools
             RTUtils.Release(handle);
         }
 
-        [Test, ConditionalIgnore("IgnoreTest", "Test ignored.")]
+        [Test]
         public void RTHandleRW_Has_RW_Flag_Set()
         {
             var handle = RTUtils.GetTempHandle(descriptorRW);
@@ -102,9 +80,10 @@ namespace UnityEditor.TerrainTools
             RTUtils.Release(handle);
         }
 
+        [Test]
         public void RTHandle_Scope_Cleanup()
         {
-            var handle = RTUtils.GetTempHandle(descriptor);
+            var handle = RTUtils.GetTempHandle(descriptorRW);
             
             Assert.True(m_PrevRTHandleCount + 1 == RTUtils.GetHandleCount());
             

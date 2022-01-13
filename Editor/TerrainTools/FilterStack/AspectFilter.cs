@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
-    internal class AspectFilter : Filter
+    public class AspectFilter : Filter
     {
         static readonly int RemapTexWidth = 1024;
 
@@ -37,7 +37,7 @@ namespace UnityEditor.TerrainTools
         {
             if (m_AspectCS == null)
             {
-                m_AspectCS = ComputeUtility.GetShader("Aspect");
+                m_AspectCS = (ComputeShader)Resources.Load("Aspect");
             }
             return m_AspectCS;
         }

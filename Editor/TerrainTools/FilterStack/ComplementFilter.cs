@@ -1,9 +1,9 @@
 using UnityEngine;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
-    internal class ComplementFilter : Filter
+    public class ComplementFilter : Filter
     {
         [SerializeField]
         public float value = 1;

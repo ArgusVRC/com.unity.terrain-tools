@@ -1,12 +1,11 @@
 using UnityEngine;
-using UnityEngine.TerrainTools;
+using UnityEngine.Experimental.TerrainAPI;
 using System;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
-    internal class WindBrushUIGroup : BaseBrushUIGroup
-    {
+    public class WindBrushUIGroup : BaseBrushUIGroup {
         [Flags]
         public enum Feature {
             Size = 1 << 0,
@@ -22,8 +21,7 @@ namespace UnityEditor.TerrainTools
             NoSpacing = All & ~Spacing,
         }
 
-        public WindBrushUIGroup(string name, Func<TerrainToolsAnalytics.IBrushParameter[]> analyticsCall = null, Feature feature = Feature.All) : base(name, analyticsCall)
-        {
+        public WindBrushUIGroup(string name, Func<TerrainToolsAnalytics.IBrushParameter[]> analyticsCall = null, Feature feature = Feature.All) : base(name, analyticsCall) {
             //Scatter must be first.
             if ((feature & Feature.Scatter) != 0) {
                 AddScatterController(new BrushScatterVariator(name, this, this));
@@ -50,7 +48,8 @@ namespace UnityEditor.TerrainTools
         }
     }
 
-    internal class WindErosionTool : TerrainPaintTool<WindErosionTool>
+
+    public class WindErosionTool : TerrainPaintTool<WindErosionTool>, IValidationTests
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Wind Erosion Tool", typeof(TerrainToolShortcutContext))]                     // tells shortcut manager what to call the shortcut and what to pass as args
@@ -89,6 +88,9 @@ namespace UnityEditor.TerrainTools
             commonUI.OnExitToolMode();
         }
 
+        #region Resources
+
+
         Material m_Material = null;
         Material GetPaintMaterial()
         {
@@ -96,13 +98,16 @@ namespace UnityEditor.TerrainTools
                 m_Material = new Material(Shader.Find("Hidden/TerrainTools/SimpleHeightBlend"));
             return m_Material;
         }
+        
+        #endregion
 
+        #region GUI
         public override string GetName()
         {
             return "Erosion/Wind";
         }
 
-        public override string GetDescription()
+        public override string GetDesc()
         {
             return "Simulates wind erosion\n\n" + 
                 "Brush Rotation will change the wind direction";
@@ -149,19 +154,16 @@ namespace UnityEditor.TerrainTools
             {
                 if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
-                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
-                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
-                        editContext.brushTexture, brushXform, previewMaterial, 0);
-                    texelCtx.Cleanup();
+                
+                    brushRender.RenderBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
             
                     Quaternion windRot = Quaternion.AngleAxis(commonUI.brushRotation, new Vector3(0.0f, 1.0f, 0.0f));
                     Handles.ArrowHandleCap(0, commonUI.raycastHitUnderCursor.point, windRot, 0.5f * commonUI.brushSize, EventType.Repaint);
                 }
             }
         }
+
 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
@@ -170,7 +172,7 @@ namespace UnityEditor.TerrainTools
             commonUI.OnInspectorGUI(terrain, editContext);
             m_Eroder.OnInspectorGUI();
 
-            commonUI.validationMessage = TerrainToolGUIHelper.ValidateAndGenerateSceneGUIMessage(terrain);
+            commonUI.validationMessage = ValidateAndGenerateUserMessage(terrain);
 
             if (EditorGUI.EndChangeCheck()) {
                 Save(true);
@@ -178,6 +180,9 @@ namespace UnityEditor.TerrainTools
             }
 
         }
+        #endregion
+
+        #region Paint
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
@@ -193,8 +198,7 @@ namespace UnityEditor.TerrainTools
                 {
                     if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
-                        var brushBounds = brushXform.GetBrushXYBounds();
-                        PaintContext paintContext = brushRender.AcquireHeightmap(true, brushBounds, 4);
+                        PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 4);
                         paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
 
                         //paintContext.sourceRenderTexture = input heightmap
@@ -207,10 +211,9 @@ namespace UnityEditor.TerrainTools
                         m_Eroder.m_WindVel = speed * (new Vector4(-Mathf.Sin(rad), Mathf.Cos(rad), 0.0f, 0.0f));
                         m_Eroder.inputTextures["Height"] = paintContext.sourceRenderTexture;
 
-                        var heightRT = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW((int) brushBounds.width, (int) brushBounds.height, 0, RenderTextureFormat.RFloat));
                         Vector2 texelSize = new Vector2(terrain.terrainData.size.x / terrain.terrainData.heightmapResolution,
                                                     terrain.terrainData.size.z / terrain.terrainData.heightmapResolution);
-                        m_Eroder.ErodeHeightmap(heightRT, terrain.terrainData.size, brushBounds, texelSize);
+                        m_Eroder.ErodeHeightmap(terrain.terrainData.size, brushXform.GetBrushXYBounds(), texelSize);
     
                         //Blit the result onto the new height map
                         Material mat = GetPaintMaterial();
@@ -218,22 +221,33 @@ namespace UnityEditor.TerrainTools
                         Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                         Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, 0.0f, 0.0f);
                         mat.SetTexture("_BrushTex", editContext.brushTexture);
-                        mat.SetTexture("_NewHeightTex", heightRT);
+                        mat.SetTexture("_NewHeightTex", m_Eroder.outputTextures["Height"]);
                         mat.SetVector("_BrushParams", brushParams);
                 
                         brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                         brushRender.RenderBrush(paintContext, mat, 0);
                         brushRender.Release(paintContext);
                         RTUtils.Release(brushMask);
-                        RTUtils.Release(heightRT);
                     }
                 }
             }
 
             return true;
         }
+        #endregion
 
-        //Analytics Setup
+        #region IValidationTests
+        public virtual string ValidateAndGenerateUserMessage(Terrain terrain)
+        {
+            if (terrain.terrainData.heightmapResolution < 1025)
+                return "Erosion tools work best with a heightmap resolution of 1025 or greater.";
+            return "";
+
+        }
+
+        #endregion
+
+        #region Analytics
         private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[] {
             new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_SimulationScale.text, Value = m_Eroder.SimulationScale.value},
             new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_WindSpeed.text, Value = m_Eroder.m_WindSpeed.value },
@@ -253,5 +267,6 @@ namespace UnityEditor.TerrainTools
             new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_AngleOfRepose.text, Value = m_Eroder.AngleOfRepose },
 
         };
+        #endregion
     }
 }

@@ -1,4 +1,4 @@
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     /// <summary>
     /// An enum used for defining which n-dimensional spaces a particular
@@ -6,7 +6,7 @@ namespace UnityEditor.TerrainTools
     /// </summary>
     [System.Serializable]
     [System.Flags]
-    internal enum NoiseDimensionFlags
+    public enum NoiseDimensionFlags
     {
         /// <summary>
         /// No dimensions are supported
@@ -15,18 +15,18 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         /// One-dimensional noise is supported
         /// </summary>
-        _1D = (1 << 0),
+        _1D = ( 1 << 0 ),
         /// <summary>
         /// Two-dimensional noise is supported
         /// </summary>
-        _2D = (1 << 1),
+        _2D = ( 1 << 1 ),
         /// <summary>
         /// Three-dimensional noise is supported
         /// </summary>
-        _3D = (1 << 2),
+        _3D = ( 1 << 2 ),
         /// <summary>
         /// Four-dimensional noise is supported
         /// </summary>
-        _4D = (1 << 3),
+        _4D = ( 1 << 3 ),
     }
 }

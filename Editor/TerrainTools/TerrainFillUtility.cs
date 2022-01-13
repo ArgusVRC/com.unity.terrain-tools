@@ -1,18 +1,17 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.TerrainTools;
-using UnityEngine.TerrainUtils;
+using UnityEngine.Experimental.TerrainAPI;
 using System.Linq;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
-    internal static class TerrainFillUtility
+    public static class TerrainFillUtility
     {
         public static Terrain[] GetTerrainsInGroup(Terrain terrain)
         {
-            TerrainMap terrainMap = TerrainMap.CreateFromPlacement(terrain, null, false);
-            Terrain[] terrainGroup = terrainMap.terrainTiles.Select(o => o.Value).ToArray();
+            TerrainUtility.TerrainMap terrainMap = TerrainUtility.TerrainMap.CreateFromPlacement(terrain, null, false);
+            Terrain[] terrainGroup = terrainMap.m_terrainTiles.Select(o => o.Value).ToArray();
 
             return terrainGroup;
         }
@@ -23,9 +22,9 @@ namespace UnityEditor.TerrainTools
 
             Terrain[] activeTerrains = Terrain.activeTerrains;
 
-            for (int i = 0; i < activeTerrains.Length; ++i)
+            for(int i = 0; i < activeTerrains.Length; ++i)
             {
-                if (activeTerrains[i].groupingID == groupingID)
+                if(activeTerrains[i].groupingID == groupingID)
                 {
                     groupTerrains.Add(activeTerrains[i]);
                 }

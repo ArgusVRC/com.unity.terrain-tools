@@ -1,13 +1,13 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     /// <summary>
     /// Class for creating NoiseSettings Assets. If you do not need to save the NoiseSettings
     /// to disk, consider using ScriptableObject.CreateInstance< NoiseSettings >() instead.
     /// </summary>
-    internal class NoiseSettingsFactory
+    public class NoiseSettingsFactory
     {
         /// <summary>
         /// Creates a new NoiseSettings Asset in the root Assets folder. This is the function
@@ -32,7 +32,7 @@ namespace UnityEditor.TerrainTools
             assetPath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
             AssetDatabase.CreateAsset(noiseSettings, assetPath);
             AssetDatabase.SaveAssets();
-
+            
             EditorGUIUtility.PingObject(noiseSettings);
 
             return noiseSettings;

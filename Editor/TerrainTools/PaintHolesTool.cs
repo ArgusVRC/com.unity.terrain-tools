@@ -1,9 +1,9 @@
 using UnityEngine;
-using UnityEngine.TerrainTools;
+using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.ShortcutManagement;
 
 #if UNITY_2019_3_OR_NEWER
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     internal class PaintHolesTool : TerrainPaintTool<PaintHolesTool>
     {
@@ -18,7 +18,8 @@ namespace UnityEditor.TerrainTools
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI {
+        private IBrushUIGroup commonUI
+        {
             get
             {
                 if (m_commonUI == null)
@@ -31,12 +32,23 @@ namespace UnityEditor.TerrainTools
             }
         }
 
+        Material m_PaintHoleMat;
+        Material GetPaintHolesMaterial()
+        {
+            m_PaintHoleMat = null;
+            if (m_PaintHoleMat == null)
+            {
+                m_PaintHoleMat = new Material(Shader.Find("Hidden/TerrainEngine/PaintHeightTool"));
+            }
+            return m_PaintHoleMat;
+        }
+
         public override string GetName()
         {
             return "Paint Holes";
         }
 
-        public override string GetDescription()
+        public override string GetDesc()
         {
             return "Left click to paint a hole.\n\nHold Control and left click to erase it.";
         }
@@ -74,20 +86,17 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-
+            
             if (commonUI.isRaycastHitUnderCursorValid)
             {
-                using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PaintHoles", editContext.brushTexture))
+                using(IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PaintHoles", editContext.brushTexture))
                 {
                     if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
                         PaintContext paintContext = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                        Material previewMaterial = Utility.GetDefaultPreviewMaterial();
-                        var texelCtx = Utility.CollectTexelValidity(paintContext.originTerrain, brushXform.GetBrushXYBounds());
-                        Utility.SetupMaterialForPaintingWithTexelValidityContext(paintContext, texelCtx, brushXform, previewMaterial);
-                        TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.SourceRenderTexture,
-                            editContext.brushTexture, brushXform, previewMaterial, 0);
-                        texelCtx.Cleanup();
+                        Material material = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
+
+                        brushRender.RenderBrushPreview(paintContext, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushXform, material, 0);
                     }
                 }
             }
@@ -109,7 +118,7 @@ namespace UnityEditor.TerrainTools
                     PaintContext paintContextHeight = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds());
 
                     // filter stack
-                    Material mat = Utility.GetPaintHeightMaterial();
+                    Material mat = GetPaintHolesMaterial();
                     var brushMask = RTUtils.GetTempHandle(paintContextHeight.sourceRenderTexture.width, paintContextHeight.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
                     Utility.SetFilterRT(commonUI, paintContextHeight.sourceRenderTexture, brushMask, mat);
 
@@ -120,12 +129,12 @@ namespace UnityEditor.TerrainTools
                     mat.SetVector("_BrushParams", brushParams);
 
                     brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
-                    brushRender.RenderBrush(paintContext, mat, (int)TerrainBuiltinPaintMaterialPasses.PaintHoles);
+                    brushRender.RenderBrush(paintContext, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.PaintHoles);
 
                     TerrainPaintUtility.EndPaintHoles(paintContext, "Terrain Paint - Paint Holes");
                     RTUtils.Release(brushMask);
-                }
-            }
+                }			
+            }		
             return true;
         }
     }

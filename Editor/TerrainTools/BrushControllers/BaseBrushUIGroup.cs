@@ -7,7 +7,7 @@ using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     public abstract class BaseBrushUIGroup : IBrushUIGroup, IBrushEventHandler, IBrushTerrainCache
     {
@@ -147,12 +147,12 @@ namespace UnityEditor.TerrainTools
             {
                 if (m_BrushSmoothController != null)
                 {
-                    return Event.current != null && Event.current.shift;
+                    return Event.current.shift;
                 }
                 return false;
             }
         }
-        public virtual bool allowPaint => (m_BrushSpacingController?.allowPaint ?? true) && !isSmoothing;
+        public bool allowPaint => (m_BrushSpacingController?.allowPaint ?? true) && !isSmoothing;
         public bool InvertStrength => m_BrushModifierKeyController?.ModifierActive(BrushModifierKey.BRUSH_MOD_INVERT) ?? false;
         
         public bool isInUse
@@ -171,6 +171,9 @@ namespace UnityEditor.TerrainTools
             }
         }
 
+        private static bool s_MultipleControlShortcuts = true;
+
+        #region GUIStyles
         private static class Styles
         {
             public static GUIStyle Box { get; private set; }
@@ -186,6 +189,7 @@ namespace UnityEditor.TerrainTools
                 Box.normal.textColor = Color.white;
             }
         }
+        #endregion
 
         Func<TerrainToolsAnalytics.IBrushParameter[]> m_analyticsCallback;
         protected BaseBrushUIGroup(string name, Func<TerrainToolsAnalytics.IBrushParameter[]> analyticsCall = null)
@@ -194,23 +198,39 @@ namespace UnityEditor.TerrainTools
             m_analyticsCallback = analyticsCall;
         }
 
-#if UNITY_2019_1_OR_NEWER
+        #region Shortcut Handling
+        #if UNITY_2019_1_OR_NEWER
         [ClutchShortcut("Terrain/Adjust Brush Strength (SceneView)", typeof(TerrainToolShortcutContext), KeyCode.A)]
         static void StrengthBrushShortcut(ShortcutArguments args) {
-            s_ShortcutHandler.HandleShortcutChanged(args, BrushShortcutType.Strength);
+            if(s_MultipleControlShortcuts)
+            {
+                s_ShortcutHandler.HandleShortcutChanged(args, BrushShortcutType.Strength);
+            }
         }
 
         [ClutchShortcut("Terrain/Adjust Brush Size (SceneView)", typeof(TerrainToolShortcutContext), KeyCode.S)]
         static void ResizeBrushShortcut(ShortcutArguments args) {
-            s_ShortcutHandler.HandleShortcutChanged(args, BrushShortcutType.Size);
+            if(s_MultipleControlShortcuts)
+            {
+                s_ShortcutHandler.HandleShortcutChanged(args, BrushShortcutType.Size);
+            }
+            else
+            {
+                s_ShortcutHandler.HandleShortcutChanged(args, BrushShortcutType.RotationSizeStrength);
+            }
         }
 
         [ClutchShortcut("Terrain/Adjust Brush Rotation (SceneView)", typeof(TerrainToolShortcutContext), KeyCode.D)]
         private static void RotateBrushShortcut(ShortcutArguments args) {
-            s_ShortcutHandler.HandleShortcutChanged(args, BrushShortcutType.Rotation);
+            if(s_MultipleControlShortcuts)
+            {
+                s_ShortcutHandler.HandleShortcutChanged(args, BrushShortcutType.Rotation);
+            }
         }
-#endif
+        #endif
+        #endregion
 
+        #region Add Controllers
         protected TController AddController<TController>(TController newController) where TController: IBrushController
         {
             m_Controllers.Add(newController);
@@ -258,7 +278,29 @@ namespace UnityEditor.TerrainTools
             m_BrushSmoothController = newController;
             return newController;
         }
+        #endregion
 
+        #region Remove Controllers
+        protected void RemoveController<TController>(TController controller) where TController: IBrushController
+        {
+            m_Controllers.Remove(controller);
+        }
+
+        protected void RemoveAllControllers()
+        {
+            m_BrushSizeController = null;
+            m_BrushRotationController = null;
+            m_BrushStrengthController = null;
+            m_BrushSpacingController = null;
+            m_BrushScatterController = null;
+            m_BrushModifierKeyController = null;
+            m_BrushSmoothController = null;
+            
+            m_Controllers.Clear();
+        }
+        #endregion
+
+        #region IBrushEventHandler
         private bool m_RepaintRequested;
         
         public void RegisterEvent(Event newEvent)
@@ -291,7 +333,9 @@ namespace UnityEditor.TerrainTools
         {
             m_RepaintRequested = true;
         }
-
+        #endregion
+        
+        #region IBrushUIGroup
         public virtual void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             m_ShowBrushTextures = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.brushMask, m_ShowBrushTextures);
@@ -379,9 +423,11 @@ namespace UnityEditor.TerrainTools
 
         public virtual void OnEnterToolMode()
         {
+            s_MultipleControlShortcuts = EditorPrefs.GetBool("TerrainTools.MultipleControlShortcuts", true);
+
             m_BrushModifierKeyController?.OnEnterToolMode();
             m_Controllers.ForEach((controller) => controller.OnEnterToolMode(s_ShortcutHandler));
-
+            
             TerrainToolsAnalytics.m_OriginalParameters = m_analyticsCallback?.Invoke();
         }
 
@@ -389,6 +435,8 @@ namespace UnityEditor.TerrainTools
         {
             m_Controllers.ForEach((controller) => controller.OnExitToolMode(s_ShortcutHandler));
             m_BrushModifierKeyController?.OnExitToolMode();
+            
+            EditorPrefs.SetBool("TerrainTools.MultipleControlShortcuts", s_MultipleControlShortcuts);
 
             SaveFilterStack(brushMaskFilterStack);
         }
@@ -482,7 +530,7 @@ namespace UnityEditor.TerrainTools
             filterContext.ReleaseRTHandles();
 
             Event currentEvent = Event.current;
-            int controlId = GUIUtility.GetControlID(TerrainToolGUIHelper.s_TerrainEditorHash, FocusType.Passive);
+            int controlId = GUIUtility.GetControlID(BrushUITools.s_TerrainEditorHash, FocusType.Passive);
 
             if(canUpdateTerrainUnderCursor)
             {
@@ -586,41 +634,40 @@ namespace UnityEditor.TerrainTools
             return m_BrushModifierKeyController?.ModifierActive(k) ?? false;
         }
 
+        #endregion
+
+        #region IBrushTerrainCache
         private int m_TerrainUnderCursorLockCount = 0;
         
         public void LockTerrainUnderCursor(bool cursorVisible)
         {
-            if (m_TerrainUnderCursorLockCount == 0)
+            if(m_TerrainUnderCursorLockCount == 0)
             {
                 Cursor.visible = cursorVisible;
             }
-
             m_TerrainUnderCursorLockCount++;
         }
 
         public void UnlockTerrainUnderCursor()
         {
-            if (m_TerrainUnderCursorLockCount > 0)
-            {
-                m_TerrainUnderCursorLockCount--;
-            }
-            else if (m_TerrainUnderCursorLockCount == 0)
+            m_TerrainUnderCursorLockCount--;
+            if(m_TerrainUnderCursorLockCount == 0)
             {
                 // Last unlock enables the cursor...
                 Cursor.visible = true;
             }
-            else if (m_TerrainUnderCursorLockCount < 0)
+            else if(m_TerrainUnderCursorLockCount < 0)
             {
-                m_TerrainUnderCursorLockCount = 0;
-                throw new ArgumentOutOfRangeException(nameof(m_TerrainUnderCursorLockCount), "Cannot reduce m_TerrainUnderCursorLockCount below zero. Possible mismatch between lock/unlock calls.");                
+                throw new ArgumentOutOfRangeException(nameof(m_TerrainUnderCursorLockCount), "Cannot reduce m_TerrainUnderCursorLockCount below zero. Possible mismatch between lock/unlock calls.");
             }
         }
 
         public bool canUpdateTerrainUnderCursor => m_TerrainUnderCursorLockCount == 0;
         
-        public Terrain terrainUnderCursor { get; protected set; }
+        public Terrain terrainUnderCursor { get; private set; }
         public bool isRaycastHitUnderCursorValid { get; private set; }
-        public RaycastHit raycastHitUnderCursor { get; protected set; }
+        public RaycastHit raycastHitUnderCursor { get; private set; }
         public virtual string validationMessage { get; set; }
+        #endregion
     }
 }

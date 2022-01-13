@@ -1,15 +1,14 @@
 using UnityEngine;
-using UnityEngine.TerrainTools;
+using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
-    internal class SharpenPeaksTool : TerrainPaintTool<SharpenPeaksTool>
+    public class SharpenPeaksTool : TerrainPaintTool<SharpenPeaksTool>
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Sharpen Peaks Tool", typeof(TerrainToolShortcutContext))]                     // tells shortcut manager what to call the shortcut and what to pass as args
-        static void SelectShortcut(ShortcutArguments args)
-        {
+        static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;              // gets interface to modify state of TerrainTools
             context.SelectPaintTool<SharpenPeaksTool>();                                                  // set active tool
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Sharpen Peaks Tool");
@@ -18,13 +17,14 @@ namespace UnityEditor.TerrainTools
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI {
+        private IBrushUIGroup commonUI
+        {
             get
             {
-                if (m_commonUI == null)
+                if( m_commonUI == null )
                 {
                     LoadSettings();
-                    m_commonUI = new DefaultBrushUIGroup("SharpenPeaksTool", UpdateAnalyticParameters);
+                    m_commonUI = new DefaultBrushUIGroup( "SharpenPeaksTool", UpdateAnalyticParameters );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -43,28 +43,26 @@ namespace UnityEditor.TerrainTools
         Material GetPaintMaterial()
         {
             if (m_Material == null)
-                m_Material = new Material(Shader.Find("Hidden/TerrainTools/SharpenPeaks"));
+				m_Material = new Material(Shader.Find("Hidden/TerrainTools/SharpenPeaks"));
             return m_Material;
         }
 
         public override string GetName()
         {
-            return "Effects/Sharpen Peaks";
+			return "Effects/Sharpen Peaks";
         }
 
-        public override string GetDescription()
+        public override string GetDesc()
         {
             return "Sharpens peak features.";
         }
 
-        public override void OnEnterToolMode()
-        {
+        public override void OnEnterToolMode() {
             base.OnEnterToolMode();
             commonUI.OnEnterToolMode();
         }
 
-        public override void OnExitToolMode()
-        {
+        public override void OnExitToolMode() {
             base.OnExitToolMode();
             commonUI.OnExitToolMode();
         }
@@ -90,17 +88,13 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
-            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SharpenPeak", editContext.brushTexture))
+            using(IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SharpenPeak", editContext.brushTexture))
             {
-                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
-                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
-                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
-                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
-                        editContext.brushTexture, brushXform, previewMaterial, 0);
-                    texelCtx.Cleanup();
+                
+                    brushRender.RenderBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
                 }
             }
         }
@@ -108,14 +102,13 @@ namespace UnityEditor.TerrainTools
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
-
+            
             commonUI.OnInspectorGUI(terrain, editContext);
 
             m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controls, m_ShowControls, () => { m_MixStrength = 0.7f; });
-            if (m_ShowControls)
-            {
+            if (m_ShowControls) {
                 EditorGUILayout.BeginVertical("GroupBox");
-                m_MixStrength = EditorGUILayout.Slider(Styles.featureSharpness, m_MixStrength, 0, 1);
+                    m_MixStrength = EditorGUILayout.Slider(Styles.featureSharpness, m_MixStrength, 0, 1);
                 EditorGUILayout.EndVertical();
             }
 
@@ -125,17 +118,16 @@ namespace UnityEditor.TerrainTools
                 Save(true);
                 TerrainToolsAnalytics.OnParameterChange();
             }
-        }
-
-        public override bool OnPaint(Terrain terrain, IOnPaint editContext)
+		}
+		
+		public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
             commonUI.OnPaint(terrain, editContext);
-            if (!commonUI.allowPaint)
-            { return true; }
+            if(!commonUI.allowPaint) { return true; }
 
-            using (IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "SharpenPeak", editContext.brushTexture))
+            using(IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "SharpenPeak", editContext.brushTexture))
             {
-                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
 
@@ -152,7 +144,7 @@ namespace UnityEditor.TerrainTools
 
                     mat.SetTexture("_BrushTex", editContext.brushTexture);
                     mat.SetVector("_BrushParams", brushParams);
-
+                
                     brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                     brushRender.RenderBrush(paintContext, mat, 0);
                     RTUtils.Release(brushMask);
@@ -178,9 +170,10 @@ namespace UnityEditor.TerrainTools
             m_MixStrength = EditorPrefs.GetFloat("Unity.TerrainTools.SharpenPeaks.FeatureSharpness", 0.7f);
         }
 
-        //Analytics Setup
+        #region Analytics
         private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.featureSharpness.text, Value = m_MixStrength},
         };
+        #endregion
     }
 }

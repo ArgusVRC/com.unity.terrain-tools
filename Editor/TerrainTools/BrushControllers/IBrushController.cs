@@ -1,9 +1,8 @@
 
 using System.Text;
 using UnityEngine;
-using UnityEngine.TerrainTools;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
 	public interface IBrushController
 	{

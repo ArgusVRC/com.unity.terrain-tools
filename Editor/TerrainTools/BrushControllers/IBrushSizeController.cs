@@ -1,7 +1,10 @@
-namespace UnityEditor.TerrainTools
+
+using UnityEngine;
+
+namespace UnityEditor.Experimental.TerrainAPI
 {
-    public interface IBrushSizeController : IBrushController
-    {
-        float brushSize { get; set; }
-    }
+	public interface IBrushSizeController : IBrushController
+	{
+		float brushSize { get; set; }
+	}
 }

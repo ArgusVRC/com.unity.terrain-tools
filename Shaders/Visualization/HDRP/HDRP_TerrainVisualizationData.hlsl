@@ -123,6 +123,8 @@ AttributesMesh ApplyMeshModification(AttributesMesh input, float3 timeParameters
 #undef _AlbedoAffectEmissive
 #undef _EmissiveExposureWeight
 
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Decal/DecalUtilities.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitDecalData.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLitSurfaceData.hlsl"
 
 void TerrainLitShade(float2 uv, inout TerrainLitSurfaceData surfaceData);
@@ -181,7 +183,7 @@ void GetSurfaceAndBuiltinData(inout FragInputs input, float3 V, inout PositionIn
 //Visualization
 #ifdef _HEATMAP
 #ifdef LOCAL_SPACE
-	half height = UnpackHeightmap(SAMPLE_TEXTURE2D(_HeatHeightmap, sampler_HeatHeightmap, input.texCoord0.xy)) * 2;
+	half height = SAMPLE_TEXTURE2D(_HeatHeightmap, sampler_HeatHeightmap, input.texCoord0.xy).r * 2;
 #else
 	half height = ((GetAbsolutePositionWS(posInput.positionWS).y - _HeatmapData.z) - _HeatmapData.x) / (_HeatmapData.y - _HeatmapData.x);
 #endif
@@ -225,6 +227,15 @@ void GetSurfaceAndBuiltinData(inout FragInputs input, float3 V, inout PositionIn
     surfaceData.specularOcclusion = 1.0;
 #endif
 
+#if HAVE_DECALS
+    if (_EnableDecals)
+    {
+        float alpha = 1.0; // unused
+        DecalSurfaceData decalSurfaceData = GetDecalSurfaceData(posInput, alpha);
+        ApplyDecalToSurfaceData(decalSurfaceData, surfaceData);
+    }
+#endif
+
 #ifdef DEBUG_DISPLAY
     if (_DebugMipMapMode != DEBUGMIPMAPMODE_NONE)
     {
@@ -233,7 +244,7 @@ void GetSurfaceAndBuiltinData(inout FragInputs input, float3 V, inout PositionIn
     }
     // We need to call ApplyDebugToSurfaceData after filling the surfarcedata and before filling builtinData
     // as it can modify attribute use for static lighting
-    ApplyDebugToSurfaceData(input.tangentToWorld, surfaceData);
+    ApplyDebugToSurfaceData(input.worldToTangent, surfaceData);
 #endif
 
     GetBuiltinData(input, V, posInput, surfaceData, 1, bentNormalWS, 0, builtinData);

@@ -1,10 +1,10 @@
 using UnityEngine;
-using UnityEngine.TerrainTools;
+using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
-    internal class CloneBrushTool : TerrainPaintTool<CloneBrushTool>
+    public class CloneBrushTool : TerrainPaintTool<CloneBrushTool>
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Clone Tool", typeof(TerrainToolShortcutContext))]                     // tells shortcut manager what to call the shortcut and what to pass as args
@@ -24,7 +24,7 @@ namespace UnityEditor.TerrainTools
             CloneHeightmap
         }
 
-        internal enum MovementBehavior
+        public enum MovementBehavior
         {
             FollowAlways = 0,   // clone location will move with the brush always
             Snap,               // clone snaps back to set sample location on mouse up
@@ -67,10 +67,11 @@ namespace UnityEditor.TerrainTools
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI {
+        private IBrushUIGroup commonUI
+        {
             get
             {
-                if (m_commonUI == null)
+                if( m_commonUI == null )
                 {
                     LoadSettings();
                     m_commonUI = new DefaultBrushUIGroup("CloneBrushTool", UpdateAnalyticParameters);
@@ -93,8 +94,7 @@ namespace UnityEditor.TerrainTools
         private BrushLocationData m_SampleLocation;
         // Brush location defined when user ctrl-clicks. Where the sample location should
         // "snap" back to when the user is not painting and clone behavior == Snap
-        [SerializeField]
-        private BrushLocationData m_SnapbackLocation;
+        [SerializeField] private BrushLocationData m_SnapbackLocation;
         // brush location data used for determining how much the user brush moved in a frame
         private BrushLocationData m_PrevBrushLocation;
 
@@ -114,7 +114,7 @@ namespace UnityEditor.TerrainTools
             return "Sculpt/Clone";
         }
 
-        public override string GetDescription()
+        public override string GetDesc()
         {
             return Styles.descriptionString;
         }
@@ -139,7 +139,7 @@ namespace UnityEditor.TerrainTools
 
             m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controlHeader, m_ShowControls, cloneToolProperties.SetDefaults);
 
-            if (m_ShowControls)
+            if(m_ShowControls)
             {
                 EditorGUILayout.BeginVertical("GroupBox");
                 {
@@ -186,7 +186,7 @@ namespace UnityEditor.TerrainTools
 
             ProcessInput(terrain, editContext);
 
-            if (!commonUI.isInUse)
+            if(!commonUI.isInUse)
             {
                 UpdateBrushLocations(terrain, editContext);
             }
@@ -207,12 +207,10 @@ namespace UnityEditor.TerrainTools
             if (!m_isPainting || m_SampleLocation.terrain == null)
                 return true;
 
-            if (commonUI.allowPaint)
-            {
+            if (commonUI.allowPaint) {
                 Vector2 uv = editContext.uv;
 
-                if (commonUI.ScatterBrushStamp(ref terrain, ref uv))
-                {
+                if(commonUI.ScatterBrushStamp(ref terrain, ref uv)) {
                     // grab brush transforms for the sample location (where we are cloning from)
                     // and target location (where we are cloning to)
                     Vector2 sampleUV = TerrainUVFromBrushLocation(m_SampleLocation.terrain, m_SampleLocation.pos);
@@ -226,10 +224,8 @@ namespace UnityEditor.TerrainTools
                     mat.SetVector("_BrushParams", brushParams);
 
                     // apply texture modifications to terrain
-                    if (cloneToolProperties.m_PaintAlphamap)
-                        PaintAlphamap(m_SampleLocation.terrain, terrain, sampleBrushXform, targetBrushXform, mat);
-                    if (cloneToolProperties.m_PaintHeightmap)
-                        PaintHeightmap(m_SampleLocation.terrain, terrain, sampleBrushXform, targetBrushXform, editContext, mat);
+                    if (cloneToolProperties.m_PaintAlphamap) PaintAlphamap(m_SampleLocation.terrain, terrain, sampleBrushXform, targetBrushXform, mat);
+                    if (cloneToolProperties.m_PaintHeightmap) PaintHeightmap(m_SampleLocation.terrain, terrain, sampleBrushXform, targetBrushXform, editContext, mat);
                 }
             }
 
@@ -243,12 +239,12 @@ namespace UnityEditor.TerrainTools
                 m_lmb = true;
             else if (Event.current.type == EventType.MouseUp && Event.current.button == 0)
                 m_lmb = false;
-
-            if (!m_isPainting)
+            
+            if(!m_isPainting)
             {
                 m_ctrl = Event.current.control;
             }
-
+            
             m_wasPainting = m_isPainting;
 
             // xxx(jcowles): this logic is no good becuse it makes assumptions about what modifier keys will enable/disable painting,
@@ -269,13 +265,13 @@ namespace UnityEditor.TerrainTools
             {
                 // check to see if the user is selecting a new location for the clone sample
                 // and set the current sample location to that as well as the snap back location
-                if (m_lmb && m_ctrl)
+                if(m_lmb && m_ctrl)
                 {
                     m_HasDoneFirstPaint = false;
                     m_SampleLocation.Set(terrain, editContext.raycastHit.point);
                     m_SnapbackLocation.Set(terrain, editContext.raycastHit.point);
                 }
-
+                
                 // snap the sample location back to the user-picked sample position
                 if (cloneToolProperties.m_MovementBehavior == MovementBehavior.Snap)
                 {
@@ -293,7 +289,7 @@ namespace UnityEditor.TerrainTools
             bool updateClone = (m_isPainting && cloneToolProperties.m_MovementBehavior != MovementBehavior.Fixed) ||
                                 (m_isPainting && cloneToolProperties.m_MovementBehavior == MovementBehavior.FollowOnPaint) ||
                                 (m_HasDoneFirstPaint && cloneToolProperties.m_MovementBehavior == MovementBehavior.FollowAlways);
-
+            
             if (updateClone)
             {
                 HandleBrushCrossingSeams(ref m_SampleLocation, editContext.raycastHit.point, m_PrevBrushLocation.pos);
@@ -331,18 +327,15 @@ namespace UnityEditor.TerrainTools
             Vector2 sampleUV;
             BrushTransform sampleXform;
             PaintContext sampleContext = null;
-            Material previewMat = Utility.GetDefaultPreviewMaterial();
+            Material previewMat = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
             // draw sample location brush and create context data to be used when drawing target brush previews
             if (m_SampleLocation.terrain != null)
             {
                 sampleUV = TerrainUVFromBrushLocation(m_SampleLocation.terrain, m_SampleLocation.pos);
                 sampleXform = TerrainPaintUtility.CalculateBrushTransform(m_SampleLocation.terrain, sampleUV, commonUI.brushSize, commonUI.brushRotation);
                 sampleContext = TerrainPaintUtility.BeginPaintHeightmap(m_SampleLocation.terrain, sampleXform.GetBrushXYBounds());
-                var texelCtx = Utility.CollectTexelValidity(sampleContext.originTerrain, sampleXform.GetBrushXYBounds());
-                Utility.SetupMaterialForPaintingWithTexelValidityContext(sampleContext, texelCtx, sampleXform, previewMat);
-                TerrainPaintUtilityEditor.DrawBrushPreview(sampleContext, TerrainBrushPreviewMode.SourceRenderTexture,
-                    editContext.brushTexture, sampleXform, previewMat, 0);
-                texelCtx.Cleanup();
+                TerrainPaintUtilityEditor.DrawBrushPreview(sampleContext, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture,
+                                                           editContext.brushTexture, sampleXform, previewMat, 0);
             }
 
             // draw brush preview and mesh preview for current mouse position
@@ -350,24 +343,18 @@ namespace UnityEditor.TerrainTools
             {
                 BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, commonUI.raycastHitUnderCursor.textureCoord, commonUI.brushSize, commonUI.brushRotation);
                 PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
-                var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
-                Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMat);
 
-                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
-                    editContext.brushTexture, brushXform, previewMat, 0);
-
-                if (sampleContext != null && cloneToolProperties.m_PaintHeightmap)
-                {
+                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+                if (sampleContext != null && cloneToolProperties.m_PaintHeightmap) {
                     ApplyHeightmap(sampleContext, ctx, brushXform, terrain, editContext.brushTexture, commonUI.brushStrength);
                     RenderTexture.active = ctx.oldRenderTexture;
                     previewMat.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
-                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.DestinationRenderTexture,
-                        editContext.brushTexture, brushXform, previewMat, 1);
+                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture,
+                                                               editContext.brushTexture, brushXform, previewMat, 1);
                 }
 
                 // Restores RenderTexture.active
                 ctx.Cleanup();
-                texelCtx.Cleanup();
             }
 
             // Restores RenderTexture.active
@@ -378,7 +365,7 @@ namespace UnityEditor.TerrainTools
         {
             // position relative to Terrain-space. doesnt handle rotations,
             // since that's not really supported at the moment
-            Vector3 posTS = posWS - terrain.transform.position;
+            Vector3 posTS = posWS - terrain.transform.position; 
             Vector3 size = terrain.terrainData.size;
 
             return new Vector2(posTS.x / size.x, posTS.z / size.z);
@@ -401,18 +388,17 @@ namespace UnityEditor.TerrainTools
             RTUtils.Release(brushMask);
         }
 
-        private Vector4 ComputeSampleUVScaleOffset(PaintContext sampleContext, PaintContext targetContext)
-        {
+        private Vector4 ComputeSampleUVScaleOffset(PaintContext sampleContext, PaintContext targetContext) {
             Vector4 sampleUVScaleOffset;
             TerrainPaintUtility.BuildTransformPaintContextUVToPaintContextUV(targetContext, sampleContext, out sampleUVScaleOffset);
 
             var sampleUV = TerrainUVFromBrushLocation(m_SampleLocation.terrain, m_SampleLocation.pos);
             var paintContextUVOffset = sampleUV * (sampleContext.targetTextureHeight / (float)m_SampleLocation.terrain.terrainData.heightmapResolution);
-
+            
             float deltaUPixels = (sampleUV.x - commonUI.raycastHitUnderCursor.textureCoord.x) * targetContext.targetTextureWidth;
             float deltaVPixels = (sampleUV.y - commonUI.raycastHitUnderCursor.textureCoord.y) * targetContext.targetTextureHeight;
-            sampleUVScaleOffset.z += ((int)deltaUPixels) / (float)sampleContext.pixelRect.width;
-            sampleUVScaleOffset.w += ((int)deltaVPixels) / (float)sampleContext.pixelRect.height;
+            sampleUVScaleOffset.z += ((int) deltaUPixels) / (float)sampleContext.pixelRect.width;
+            sampleUVScaleOffset.w += ((int) deltaVPixels) / (float)sampleContext.pixelRect.height;
 
             return sampleUVScaleOffset;
         }
@@ -439,8 +425,7 @@ namespace UnityEditor.TerrainTools
             {
                 TerrainLayer layer = sampleTerrain.terrainData.terrainLayers[i];
 
-                if (layer == null)
-                    continue; // nothing to paint if the layer is NULL
+                if (layer == null) continue; // nothing to paint if the layer is NULL
 
                 PaintContext sampleContext = TerrainPaintUtility.BeginPaintTexture(sampleTerrain, sampleRect, layer);
 
@@ -473,7 +458,7 @@ namespace UnityEditor.TerrainTools
                                             "Hold Ctrl and Left Click to assign the clone sample area.\n\n" +
                                             "Left Click to apply the cloned stamp.";
             public static readonly GUIContent cloneSourceContent = EditorGUIUtility.TrTextContent("Terrain sources to clone:",
-                                            "Textures:\nBrush will gather and clone TerrainLayer data at Sample location\n\n" +
+                                            "Textures:\nBrush will gather and clone TerrainLayer data at Sample location\n\n" + 
                                             "Heightmap:\nBrush will gather and clone Heightmap data at Sample location");
             public static readonly GUIContent cloneTextureContent = EditorGUIUtility.TrTextContent("Textures", "Brush will gather and clone TerrainLayer data from Sample location");
             public static readonly GUIContent cloneHeightmapContent = EditorGUIUtility.TrTextContent("Heightmap", "Brush will gather and clone Heightmap data from Sample location");
@@ -482,7 +467,7 @@ namespace UnityEditor.TerrainTools
                                             "Follow On Paint:\nClone location will move with mouse position (only when painting) and not snap back\n\n" +
                                             "Follow Always:\nClone location will always move with mouse position (even when not painting) and not snap back\n\n" +
                                             "Fixed:\nClone location will always stay at the user-selected location");
-            public static readonly GUIContent heightOffsetContent = EditorGUIUtility.TrTextContent("Height Offset",
+            public static readonly GUIContent heightOffsetContent = EditorGUIUtility.TrTextContent("Height Offset", 
                                             "When stamping the heightmap, the cloned height will be added with this offset to raise or lower the cloned height at the stamp location.");
             public static readonly GUIContent controlHeader = EditorGUIUtility.TrTextContent("Clone Brush Controls");
 
@@ -515,12 +500,13 @@ namespace UnityEditor.TerrainTools
             JsonUtility.FromJsonOverwrite(cloneToolData, cloneToolProperties);
         }
 
-        //Analytics Setup
+        #region Analytics
         private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
             new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.cloneTextureContent.text, Value = cloneToolProperties.m_PaintAlphamap},
             new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.cloneHeightmapContent.text, Value = cloneToolProperties.m_PaintHeightmap},
             new TerrainToolsAnalytics.BrushParameter<string>{Name = Styles.cloneBehaviorContent.text, Value = cloneToolProperties.m_MovementBehavior.ToString()},
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.heightOffsetContent.text, Value = cloneToolProperties.m_StampingOffsetFromClone},
         };
+        #endregion
     }
 }

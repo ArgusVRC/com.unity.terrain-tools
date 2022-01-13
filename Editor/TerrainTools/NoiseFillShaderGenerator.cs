@@ -1,4 +1,6 @@
-namespace UnityEditor.TerrainTools
+using UnityEngine;
+
+namespace UnityEditor.Experimental.TerrainAPI
 {
     internal class NoiseFillShaderGenerator : NoiseShaderGenerator<NoiseFillShaderGenerator>
     {

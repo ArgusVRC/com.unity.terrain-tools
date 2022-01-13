@@ -1,9 +1,9 @@
 using UnityEngine;
 
-namespace UnityEditor.TerrainTools
+namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
-    internal class AbsFilter : Filter
+    public class AbsFilter : Filter
     {
         public override string GetDisplayName() => "Abs";
         public override string GetToolTip() => "Sets all pixels of an existing Brush Mask to their absolute values";

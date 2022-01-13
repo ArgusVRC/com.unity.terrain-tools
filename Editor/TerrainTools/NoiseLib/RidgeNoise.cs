@@ -1,10 +1,12 @@
-namespace UnityEditor.TerrainTools
+using System.Collections.Generic;
+
+namespace UnityEditor.Experimental.TerrainAPI
 {
     /// <summary>
-    /// A NoiseType implementation for Ridge noise.
+    /// A NoiseType implementation for Ridge noise
     /// </summary>
     [System.Serializable]
-    internal class RidgeNoise : NoiseType<RidgeNoise>
+    public class RidgeNoise : NoiseType<RidgeNoise>
     {
         private static NoiseTypeDescriptor desc = new NoiseTypeDescriptor()
         {

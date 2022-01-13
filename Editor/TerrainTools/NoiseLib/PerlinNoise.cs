@@ -1,10 +1,12 @@
-namespace UnityEditor.TerrainTools
+using System.Collections.Generic;
+
+namespace UnityEditor.Experimental.TerrainAPI
 {
     /// <summary>
     /// A NoiseType implementation for Perlin noise
     /// </summary>
     [System.Serializable]
-    internal class PerlinNoise : NoiseType<PerlinNoise>
+    public class PerlinNoise : NoiseType<PerlinNoise>
     {
         private static NoiseTypeDescriptor desc = new NoiseTypeDescriptor()
         {

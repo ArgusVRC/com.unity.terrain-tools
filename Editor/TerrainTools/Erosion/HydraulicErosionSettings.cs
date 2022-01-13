@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
 using System;
 
-namespace UnityEditor.TerrainTools.Erosion {
+namespace Erosion {
     [Serializable]
-    internal class HydraulicErosionSettings {
+    public class HydraulicErosionSettings {
         [SerializeField]
         public int m_AddHeightAmt;
 
