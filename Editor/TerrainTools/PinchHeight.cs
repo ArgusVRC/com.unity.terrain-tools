@@ -57,8 +57,7 @@ namespace UnityEditor.TerrainTools
 
         public override string GetDescription()
         {
-            return "Pulls or pushes Terrain features and layers from the center of the Brush.\n\n" +
-                "Hold Ctrl + Click to push Terrain features and layers.";
+            return "Click to Pinch the terrain height. Click plus control to bulge.";
         }
 
         public override void OnEnterToolMode()
@@ -100,13 +99,10 @@ namespace UnityEditor.TerrainTools
                 if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
+                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
 
                     var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
                     Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
-                    var filterRT = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width,
-                        ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                    Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filterRT, previewMaterial);
                     TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
                         editContext.brushTexture, brushXform, previewMaterial, 0);
 
@@ -129,7 +125,6 @@ namespace UnityEditor.TerrainTools
                     }
 
                     texelCtx.Cleanup();
-                    RTUtils.Release(filterRT);
                 }
             }
         }
@@ -215,7 +210,7 @@ namespace UnityEditor.TerrainTools
                             TerrainLayer layer = terrain.terrainData.terrainLayers[i];
                             PaintContext paintContext = brushRender.AcquireTexture(true, brushXform.GetBrushXYBounds(), layer);
                             var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                            Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
+                            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
 
                             paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
 
@@ -230,7 +225,7 @@ namespace UnityEditor.TerrainTools
                     {
                         PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
                         var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                        Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
+                        Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
 
                         paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
 

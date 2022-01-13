@@ -2,15 +2,13 @@
 
 Use the Sharpen Peaks Tool to sharpen peaks and flatten flat areas of the Terrain.
 
-![](images/2-22-Sharpen-03.png)
+Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** (brush) icon, and select **Effects > Sharpen Peaks** from the list of Terrain tools.
 
-Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Effects** > **Sharpen Peaks** from the list of Terrain tools.
-
-![](images/2-22-Sharpen-01.png)
+![](images/Tools_HowToSelection.png)
 
 ## Parameters
 
-![](images/2-22-Sharpen-02.png)
+![](images/Tool_SharpenPeaks_Parameters.png)
 
 | **Property**  | **Description**                                              |
 | ------------- | ------------------------------------------------------------ |

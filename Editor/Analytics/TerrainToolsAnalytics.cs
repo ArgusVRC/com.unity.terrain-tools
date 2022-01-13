@@ -55,19 +55,11 @@ namespace UnityEditor.TerrainTools
         internal static IBrushParameter[] m_OriginalParameters;
 
         /// <summary>
-        /// Interface for iterating over brush parameters of an ambiguous type.
+        /// Interface for iterating over brush parameters of an ambiguous type
         /// </summary>
         public interface IBrushParameter
         {
-            /// <summary>
-            /// Retrieves the parameter's type.
-            /// </summary>
-            /// <returns>Returns the parameter's system type.</returns>
             System.Type ParameterType();
-
-            /// <summary>
-            /// Gets and sets the parameters name.
-            /// </summary>
             string Name { get; set; }
         }
 

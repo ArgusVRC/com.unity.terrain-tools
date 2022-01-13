@@ -8,27 +8,16 @@ using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor.TerrainTools
 {
-    /// <summary>
-    /// Provides methods for changing and restoring active <see cref="RenderTexture"/>s.
-    /// </summary>
     public struct ActiveRenderTextureScope : IDisposable
     {
         RenderTexture m_Prev;
 
-        /// <summary>
-        /// Initializes and returns an instance of <see cref="ActiveRenderTextureScope"/>. 
-        /// </summary>
-        /// <remarks>Call this constructor to swap the previous active <see cref="RenderTexture"/> with the RenderTexture that is passed in.</remarks>
-        /// <param name="rt">The RenderTexture to set as active.</param>
         public ActiveRenderTextureScope(RenderTexture rt)
         {
             m_Prev = RenderTexture.active;
             RenderTexture.active = rt;
         }
 
-        /// <summary>
-        /// Restores the previous <see cref="RenderTexture"/>.
-        /// </summary>
         public void Dispose()
         {
             // restore prev active RT
@@ -38,7 +27,7 @@ namespace UnityEditor.TerrainTools
 
 
     /// <summary>
-    /// Provides a utility class for safely managing the lifetime of a <see cref="RenderTexture"/>.
+    /// Utility class for safely managing the lifetime of a RenderTexture
     /// </summary>
     public class RTHandle
     {
@@ -46,19 +35,19 @@ namespace UnityEditor.TerrainTools
         private bool           m_IsTemp;
 
         /// <summary>
-        /// The RenderTexture for this RTHandle.
+        /// The RenderTexture for this RTHandle
         /// </summary>
         public RenderTexture RT => m_RT;
 
         /// <summary>
-        /// The descriptor for the RTHandle and RenderTexture.
+        /// The descriptor for the RTHandle and RenderTexture
         /// </summary>
         public RenderTextureDescriptor Desc => m_RT?.descriptor ?? default;
 
         internal bool IsTemp => m_IsTemp;
 
         /// <summary>
-        /// The name for the RTHandle and RenderTexture.
+        /// The name for the RTHandle and RenderTexture
         /// </summary>
         public string Name {
             get => m_RT?.name ?? default;
@@ -71,31 +60,21 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Sets the name of the <see cref="RenderTexture"/>, and returns a reference to this <see cref="RTHandle"/>.
+        /// Sets the name of the RenderTexture and returns the reference to the RTHandle
         /// </summary>
-        /// <param name="name">The name of the underlying RenderTexture.</param>
-        /// <returns>Returns a reference to this RTHandle.</returns>
+        /// <param name="name">The name of the underlying RenderTexture</param>
+        /// <returns>Reference to the RTHandle</returns>
         public RTHandle WithName(string name)
         {
             Name = name;
             return this;
         }
 
-        /// <summary>
-        /// Converts the <see cref="RTHandle"/> to a <see cref="RenderTexture"/> type.
-        /// </summary>
-        /// <param name="handle">The RTHandle to convert.</param>
-        /// <returns>Returns a RenderTexture handle.</returns>
         public static implicit operator RenderTexture(RTHandle handle)
         {
             return handle.RT;
         }
 
-        /// <summary>
-        /// Converts the <see cref="RTHandle"/> to a <see cref="Texture"/> type.
-        /// </summary>
-        /// <param name="handle">The RTHandle to convert.</param>
-        /// <returns>Returns a RenderTexture handle.</returns>
         public static implicit operator Texture(RTHandle handle)
         {
             return handle.RT;
@@ -108,9 +87,8 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Represents a <c>struct</c> for handling the lifetime of an <see cref="RTHandle"/> within a <c>using</c> block.
+        /// Structure for handling the lifetime of a RTHandle within a using block. RenderTexture is released when this structure is disposed
         /// </summary>
-        /// <remarks>Releases the <see cref="RenderTexture"/> when this <c>struct</c> is disposed.</remarks>
         public struct RTHandleScope : System.IDisposable
         {
             RTHandle m_Handle;
@@ -120,9 +98,6 @@ namespace UnityEditor.TerrainTools
                 m_Handle = handle;
             }
 
-            /// <summary>
-            /// Releases the handled RenderTexture.
-            /// </summary>
             public void Dispose()
             {
                 RTUtils.Release(m_Handle);
@@ -130,18 +105,16 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Gets a new disposable <see cref="RTHandleScope"/> instance to use within <c>using</c> blocks.
+        /// Get a new disposable RTHandleScope instance to use in using blocks
         /// </summary>
-        /// <returns>Returns a new RTHandleScope instance.</returns>
         public RTHandleScope Scoped() => new RTHandleScope(this);
     }
 
     /// <summary>
-    /// Provides a utility class for getting and releasing <see cref="RenderTexture"/>s handles.
+    /// Utility class for getting and releasing RenderTextures handles.
+    /// Lifetimes of these RenderTextures are tracked and any that have not been released within several frames are
+    /// regarded as leaked RenderTexture resources and will generate warnings in the Console.
     /// </summary>
-    /// <remarks>
-    /// Tracks the lifetimes of these RenderTextures. Any RenderTextures that aren't released within several frames are regarded as leaked RenderTexture resources, which generate warnings in the Console.
-    /// </remarks>
     public static class RTUtils
     {
         class Log
@@ -208,48 +181,42 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Gets a RenderTextureDescriptor for <see cref="RenderTexture"/> operations on GPU.
+        /// Get a RenderTextureDescriptor set up for RenderTexture operations on GPU
+        /// <param name="width">Width of the RenderTexture</param>
+        /// <param name="height">Height of the RenderTexture</param>
+        /// <param name="format">RenderTextureFormat of the RenderTexture</param>
+        /// <param name="depth">Depth of the RenderTexture</param>
+        /// <param name="mipCount">MipCount of the RenderTexture. Default is 0</param>
+        /// <param name="srgb">Flag determining whether RenderTextures created using this descriptor should be sRGB or Linear space</param>
         /// </summary>
-        /// <param name="width">The width of the RenderTexture.</param>
-        /// <param name="height">The height of the RenderTexture.</param>
-        /// <param name="format">The <see cref="RenderTextureFormat"/> of the RenderTexture.</param>
-        /// <param name="depth">The depth of the RenderTexture.</param>
-        /// <param name="mipCount">The mip count of the RenderTexture. Default is <c>0</c>.</param>
-        /// <param name="srgb">The flag that determines whether RenderTextures created using this descriptor are in sRGB or Linear space.</param>
-        /// <returns>Returns a RenderTextureDescriptor object.</returns>
-        /// <seealso cref="GetDescriptor"/>
         public static RenderTextureDescriptor GetDescriptor(int width, int height, int depth, RenderTextureFormat format, int mipCount = 0, bool srgb = false)
         {
             return GetDescriptor(width, height, depth, GraphicsFormatUtility.GetGraphicsFormat(format, srgb), mipCount, srgb);
         }
 
         /// <summary>
-        /// Gets a RenderTextureDescriptor for <see cref="RenderTexture"/> operations on GPU with the <c>enableRandomWrite</c> flag set to <c>true</c>.
+        /// Get a RenderTextureDescriptor set up for RenderTexture operations on GPU with the enableRandomWrite flag set to true
+        /// <param name="width">Width of the RenderTexture</param>
+        /// <param name="height">Height of the RenderTexture</param>
+        /// <param name="format">RenderTextureFormat of the RenderTexture</param>
+        /// <param name="depth">Depth of the RenderTexture</param>
+        /// <param name="mipCount">MipCount of the RenderTexture. Default is 0</param>
+        /// <param name="srgb">Flag determining whether RenderTextures created using this descriptor should be sRGB or Linear space</param>
         /// </summary>
-        /// <param name="width">The width of the RenderTexture.</param>
-        /// <param name="height">The height of the RenderTexture.</param>
-        /// <param name="format">The <see cref="RenderTextureFormat"/> of the RenderTexture.</param>
-        /// <param name="depth">The depth of the RenderTexture.</param>
-        /// <param name="mipCount">The mip count of the RenderTexture. Default is <c>0</c>.</param>
-        /// <param name="srgb">The flag that determines whether RenderTextures created using this descriptor are in sRGB or Linear space.</param>
-        /// <returns>Returns a RenderTextureDescriptor object.</returns>
-        /// <seealso cref="GetDescriptor"/>
         public static RenderTextureDescriptor GetDescriptorRW(int width, int height, int depth, RenderTextureFormat format, int mipCount = 0, bool srgb = false)
         {
             return GetDescriptorRW(width, height, depth, GraphicsFormatUtility.GetGraphicsFormat(format, srgb), mipCount, srgb);
         }
 
         /// <summary>
-        /// Gets a RenderTextureDescriptor for <see cref="RenderTexture"/> operations on GPU with the <c>enableRandomWrite</c> flag set to <c>true</c>.
+        /// Get a RenderTextureDescriptor set up for RenderTexture operations on GPU with the enableRandomWrite flag set to true
+        /// <param name="width">Width of the RenderTexture</param>
+        /// <param name="height">Height of the RenderTexture</param>
+        /// <param name="format">GraphicsFormat of the RenderTexture</param>
+        /// <param name="depth">Depth of the RenderTexture</param>
+        /// <param name="mipCount">MipCount of the RenderTexture. Default is 0</param>
+        /// <param name="srgb">Flag determining whether RenderTextures created using this descriptor should be sRGB or Linear space</param>
         /// </summary>
-        /// <param name="width">The width of the RenderTexture.</param>
-        /// <param name="height">The height of the RenderTexture.</param>
-        /// <param name="format">The <see cref="RenderTextureFormat"/> of the RenderTexture.</param>
-        /// <param name="depth">The depth of the RenderTexture.</param>
-        /// <param name="mipCount">The mip count of the RenderTexture. Default is <c>0</c>.</param>
-        /// <param name="srgb">The flag that determines whether RenderTextures created using this descriptor are in sRGB or Linear space.</param>
-        /// <returns>Returns a RenderTextureDescriptor object.</returns>
-        /// <seealso cref="GetDescriptor"/>
         public static RenderTextureDescriptor GetDescriptorRW(int width, int height, int depth, GraphicsFormat format, int mipCount = 0, bool srgb = false)
         {
             var desc = GetDescriptor(width, height, depth, format, mipCount, srgb);
@@ -257,14 +224,15 @@ namespace UnityEditor.TerrainTools
             return desc;
         }
 
-        /// <summary>Gets a RenderTextureDescriptor set up for <see cref="RenderTexture"/> operations on GPU.</summary>
-        /// <param name="width">The width of the RenderTexture.</param>
-        /// <param name="height">The height of the RenderTexture.</param>
-        /// <param name="format">The <see cref="RenderTextureFormat"/> of the RenderTexture.</param>
-        /// <param name="depth">The depth of the RenderTexture.</param>
-        /// <param name="mipCount">The mip count of the RenderTexture. Default is <c>0</c>.</param>
-        /// <param name="srgb">The flag that determines whether RenderTextures created using this descriptor are in sRGB or Linear space.</param>
-        /// <returns>Returns a RenderTextureDescriptor object.</returns>
+        /// <summary>
+        /// Get a RenderTextureDescriptor set up for RenderTexture operations on GPU
+        /// <param name="width">Width of the RenderTexture</param>
+        /// <param name="height">Height of the RenderTexture</param>
+        /// <param name="format">RenderTextureFormat of the RenderTexture</param>
+        /// <param name="depth">Depth of the RenderTexture</param>
+        /// <param name="mipCount">MipCount of the RenderTexture. Default is 0</param>
+        /// <param name="srgb">Flag determining whether RenderTextures created using this descriptor should be sRGB or Linear space</param>
+        /// </summary>
         public static RenderTextureDescriptor GetDescriptor(int width, int height, int depth, GraphicsFormat format, int mipCount = 0, bool srgb = false)
         {
             var desc = new RenderTextureDescriptor(width, height, format, depth)
@@ -294,61 +262,52 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Gets an <see cref="RTHandle"/> for a <see cref="RenderTexture"/> acquired with <see cref="RenderTexture.GetTemporary"/>.
+        /// Get a RTHandle for a RenderTexture acquired from RenderTexture.GetTemporary. Free using RTUtils.Release
+        /// <param name="desc">RenderTextureDescriptor for the RenderTexture</param>
         /// </summary>
-        /// <remarks>Use <see cref="RTUtils.Release"/> to release the RTHandle.</remarks>
-        /// <param name="desc">RenderTextureDescriptor for the RenderTexture.</param>
-        /// <returns>Returns a temporary RTHandle.</returns>
-        /// <seealso cref="RenderTextureDescriptor"/>
         public static RTHandle GetTempHandle(RenderTextureDescriptor desc)
         {
             return GetHandle(desc, true);
         }
 
         /// <summary>
-        /// Gets an <see cref="RTHandle"/> for a <see cref="RenderTexture"/> acquired with <see cref="RenderTexture.GetTemporary"/>.
+        /// Get a RTHandle for a RenderTexture acquired with RenderTexture.GetTemporary. Free using RTUtils.Release
         /// </summary>
-        /// <remarks>Use <see cref="RTUtils.Release"/> to release the RTHandle.</remarks>
-        /// <param name="width">The width of the RenderTexture.</param>
-        /// <param name="height">The height of the RenderTexture.</param>
-        /// <param name="depth">The depth of the RenderTexture.</param>
-        /// <param name="format">The format of the RenderTexture.</param>
-        /// <returns>Returns a temporary RTHandle.</returns>
+        /// <param name="width">Width of the RenderTexture</param>
+        /// <param name="height">Height of the RenderTexture</param>
+        /// <param name="depth">Depth of the RenderTexture</param>
+        /// <param name="format">Format of the RenderTexture</param>
         public static RTHandle GetTempHandle(int width, int height, int depth, GraphicsFormat format)
         {
             return GetHandle(GetDescriptor(width, height, depth, format), true);
         }
 
         /// <summary>
-        /// Gets an <see cref="RTHandle"/> for a <see cref="RenderTexture"/> acquired with <c>new RenderTexture(desc)</c>.
+        /// Get a RTHandle for a RenderTexture acquired with 'new RenderTexture(desc)'. Free using RTUtils.Release
+        /// <param name="desc">RenderTextureDescriptor for the RenderTexture</param>
         /// </summary>
-        /// <param name="desc">The <c>RenderTextureDescriptor</c> for the RenderTexture.</param>
-        /// <returns>Returns an RTHandle.</returns>
-        /// <seealso cref="RenderTextureDescriptor"/>
         public static RTHandle GetNewHandle(RenderTextureDescriptor desc)
         {
             return GetHandle(desc, false);
         }
 
         /// <summary>
-        /// Gets an <see cref="RTHandle"/> for a <see cref="RenderTexture"/> acquired with <c>new RenderTexture(desc)</c>.
+        /// Get a RTHandle for a RenderTexture acquired with 'new RenderTexture(desc)'. Free using RTUtils.Release
         /// </summary>
-        /// <remarks>Use <see cref="RTUtils.Release"/> to release the RTHandle.</remarks>
-        /// <param name="width">The width of the RenderTexture.</param>
-        /// <param name="height">The height of the RenderTexture.</param>
-        /// <param name="depth">The depth of the RenderTexture.</param>
-        /// <param name="format">The format of the RenderTexture.</param>
-        /// <returns>Returns an RTHandle.</returns>
+        /// <param name="width">Width of the RenderTexture</param>
+        /// <param name="height">Height of the RenderTexture</param>
+        /// <param name="depth">Depth of the RenderTexture</param>
+        /// <param name="format">Format of the RenderTexture</param>
+        /// <returns></returns>
         public static RTHandle GetNewHandle(int width, int height, int depth, GraphicsFormat format)
         {
             return GetHandle(GetDescriptor(width, height, depth, format), false);
         }
 
         /// <summary>
-        /// Releases the <see cref="RenderTexture"/> resource associated with the specified <see cref="RTHandle"/>.
+        /// Release the RenderTexture resource associated with the specified RTHandle
+        /// <param name="handle">RTHandle from which RenderTexture resources will be released</param>
         /// </summary>
-        /// <param name="handle">The RTHandle from which to release RenderTexture resources.</param>
-        /// <seealso cref="RenderTexture.ReleaseTemporary"/>
         public static void Release(RTHandle handle)
         {
             if (handle.RT == null)
@@ -380,11 +339,9 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Destroys a <see cref="RenderTexture"/> created using <c>new RenderTexture()</c>.
+        /// Destroy a RenderTexture created using 'new RenderTexture()'
+        /// <param name="rt">RenderTexture to destroy</param>
         /// </summary>
-        /// <param name="rt">The RenderTexture to destroy.</param>
-        /// <seealso cref="UObject.Destroy"/>
-        /// <seealso cref="UObject.DestroyImmediate"/>
         public static void Destroy(RenderTexture rt)
         {
             if (rt == null)
@@ -401,51 +358,31 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Gets the number of <see cref="RTHandle"/>s that have been requested and not released yet.
+        /// Get the number of RTHandles that have been requested and not released yet.
         /// </summary>
-        /// <returns>Returns the number of RTHandles that have been requested and not released.</returns>
+        /// <returns>Number of RTHandles that have been requested and not released</returns>
         public static int GetHandleCount() => s_Logs.Count;
     }
 
-    /// <summary>
-    /// Provides utility methods for Terrain.
-    /// </summary>
     public static class Utility
     {
         static Material m_DefaultPreviewMat = null;
-
-
-        /// <summary>
-        /// Retrieves the default preview <see cref="Material"/> for painting on Terrains.
-        /// </summary>
-        /// <param name="filtersPreviewEnabled">Whether the filter preview is enabled.</param>
-        /// <returns>Returns Terrain painting's default preview <see cref="Material"/>.</returns>
-        public static Material GetDefaultPreviewMaterial(bool filtersPreviewEnabled = false)
+        public static Material GetDefaultPreviewMaterial()
         {
             if (m_DefaultPreviewMat == null)
             {
                 m_DefaultPreviewMat = new Material(Shader.Find("Hidden/TerrainTools/BrushPreview"));
             }
-
-            SetMaterialKeyword(m_DefaultPreviewMat, FilterUtility.filterPreviewKeyword, filtersPreviewEnabled);
-
-            //set defaults for uniforms in the shader
-            m_DefaultPreviewMat.SetFloat("_HoleStripeThreshold", 1.0f/255.0f);
-            m_DefaultPreviewMat.SetFloat("_UseAltColor", 0.0f);
-            m_DefaultPreviewMat.SetFloat("_IsPaintHolesTool", 0.0f);
-            
             return m_DefaultPreviewMat;
         }
 
         static Material m_PaintHeightMat;
         /// <summary>
-        /// Gets the paint height material to render builtin brush passes. 
-        /// </summary>
-        /// <remarks>
+        /// Get the paint height material to render builtin brush passes. 
         /// This material overrides the Builtin PaintHeight shader with Terrain Tools version of PaintHeight.
         /// See <see cref="TerrainBuiltinPaintMaterialPasses"/> for the available passes to choose from.
         /// See "/com.unity.terrain-tools/Shaders/PaintHeight.shader" for the override PaintHeight shader.
-        /// </remarks>
+        /// </summary>
         /// <returns>Material with the Paint Height shader </returns>
         public static Material GetPaintHeightMaterial()
         {
@@ -467,14 +404,6 @@ namespace UnityEditor.TerrainTools
             return m_TexelValidityMaterial;
         }
 
-        /// <summary>
-        /// Prepares the passed in <see cref="Material"/> for painting on Terrains.
-        /// </summary>
-        /// <param name="paintContext">The painting context data.</param>
-        /// <param name="brushTransform">The brush's transformation data.</param>
-        /// <param name="material">The material being used for painting on Terrains.</param>
-        /// <seealso cref="PaintContext"/>
-        /// <seealso cref="BrushTransform"/>
         public static void SetupMaterialForPainting(PaintContext paintContext, BrushTransform brushTransform, Material material)
         {
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushTransform, material);
@@ -502,28 +431,12 @@ namespace UnityEditor.TerrainTools
             );
         }
 
-        /// <summary>
-        /// Prepares the passed in <see cref="Material"/> for painting on Terrains while checking for Texel Validity.
-        /// </summary>
-        /// <param name="paintContext">The painting context data.</param>
-        /// <param name="texelCtx">The texel context data.</param>
-        /// <param name="brushTransform">The brush's transformation data.</param>
-        /// <param name="material">The material being used for painting on Terrains.</param>
-        /// <seealso cref="PaintContext"/>
-        /// <seealso cref="BrushTransform"/>
         public static void SetupMaterialForPaintingWithTexelValidityContext(PaintContext paintContext, PaintContext texelCtx, BrushTransform brushTransform, Material material)
         {
             SetupMaterialForPainting(paintContext, brushTransform, material);
             material.SetTexture("_PCValidityTex", texelCtx.sourceRenderTexture);
         }
 
-        /// <summary>
-        /// Retrieves texel context data used for checking texel validity.
-        /// </summary>
-        /// <param name="terrain"></param>
-        /// <param name="boundsInTerrainSpace"></param>
-        /// <param name="extraBorderPixels"></param>
-        /// <returns>Returns the <see cref="PaintContext"/> object used for checking texel validity.</returns>
         public static PaintContext CollectTexelValidity(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
             var res = terrain.terrainData.heightmapResolution;
@@ -539,15 +452,10 @@ namespace UnityEditor.TerrainTools
             return ctx;
         }
 
-        /// <summary>
-        /// Converts data from a <see cref="AnimationCurve"/> into a <see cref="Texture2D"/>
-        /// </summary>
-        /// <param name="curve">The <see cref="AnimationCurve"/> to convert from.</param>
-        /// <param name="tex">The <see cref="Texture2D"/> to convert data into.</param>
-        /// <returns>Returns the range of the <see cref="AnimationCurve"/>.</returns>
+        //assume this a 1D texture that has already been created
         public static Vector2 AnimationCurveToRenderTexture(AnimationCurve curve, ref Texture2D tex)
         {
-            //assume this a 1D texture that has already been created
+
             tex.wrapMode = TextureWrapMode.Clamp;
             tex.filterMode = FilterMode.Bilinear;
 
@@ -570,63 +478,24 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Sets and Generates the filter <see cref="RenderTexture"/> for transformation brushes and bind the texture to the provided Material.
+        /// Set the filter render texture for transformation brushes
         /// </summary>
-        /// <param name="commonUI">The brush's commonUI group.</param>
-        /// <param name="sourceRenderTexture">The <see cref="RenderTexture"/> designated as the source.</param>
-        /// <param name="destinationRenderTexture">The <see cref="RenderTexture"/> designated as the destination.</param>
-        /// <param name="mat">The <see cref="Material"/> to update.</param>
-        /// <seealso cref="FilterStack"/>
-        /// <seealso cref="FilterContext"/>
-        public static void GenerateAndSetFilterRT(IBrushUIGroup commonUI, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture, Material mat)
+        public static void SetFilterRT(IBrushUIGroup commonUI, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture, Material mat)
         {
-            commonUI.GenerateBrushMask(sourceRenderTexture, destinationRenderTexture);
+            commonUI.GetBrushMask(sourceRenderTexture, destinationRenderTexture);
             mat.SetTexture("_FilterTex", destinationRenderTexture);
-        }
-
-        /// <summary>
-        /// Enable or disable the keyword for the provided Material instance
-        /// </summary>
-        /// <param name="mat">The material to set.</param>
-        /// <param name="keyword">The keyword to enable and disable.</param>
-        /// <param name="enabled">Whether to enable or disable the keyword of the material.</param>
-        public static void SetMaterialKeyword(Material mat, string keyword, bool enabled)
-        {
-            if(enabled)
-            {
-                mat.EnableKeyword(keyword);
-            }
-            else
-            {
-                mat.DisableKeyword(keyword);
-            }
         }
     }
 
-    /// <summary>
-    /// Provides mesh utility methods for Terrain.
-    /// </summary>
     public static class MeshUtils
     {
-        /// <summary>
-        /// Sets which shader pass to use when rendering the <see cref="RenderTopdownProjection"/>.
-        /// </summary>
         public enum ShaderPass
         {
-            /// <summary>
-            /// Height shader pass.
-            /// </summary>
             Height = 0,
-            /// <summary>
-            /// Mask shader pass.
-            /// </summary>
             Mask = 1,
         }
 
         private static Material m_defaultProjectionMaterial;
-        /// <summary>
-        /// Gets the default projection <see cref="Material"/>.
-        /// </summary>
         public static Material defaultProjectionMaterial {
             get
             {
@@ -638,12 +507,7 @@ namespace UnityEditor.TerrainTools
                 return m_defaultProjectionMaterial;
             }
         }
-        
-        /// <summary>
-        /// Converts a <see cref="Matrix4x4"/> into a <see cref="Quaternion"/>.
-        /// </summary>
-        /// <param name="m">The <see cref="Matrix4x4"/> to convert from.</param>
-        /// <returns>Returns a converted <see cref="Quaternion"/>.</returns>
+
         public static Quaternion QuaternionFromMatrix(Matrix4x4 m)
         {
             // Adapted from: http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
@@ -658,12 +522,6 @@ namespace UnityEditor.TerrainTools
             return q;
         }
 
-        /// <summary>
-        /// Transforms a <see cref="Bounds"/>.
-        /// </summary>
-        /// <param name="m">The transformation <see cref="Matrix4x4"/>.</param>
-        /// <param name="bounds">The <see cref="Bounds"/> to transform.</param>
-        /// <returns>Returns the transformed <see cref="Bounds"/>.</returns>
         public static Bounds TransformBounds(Matrix4x4 m, Bounds bounds)
         {
             Vector3[] points = new Vector3[8];
@@ -726,14 +584,6 @@ namespace UnityEditor.TerrainTools
             return string.Format("( {0}, {1}, {2} )", v.x, v.y, v.z);
         }
 
-        /// <summary>
-        /// Renders the top down projection of a <see cref="Mesh"/> into a <see cref="RenderTexture"/>.
-        /// </summary>
-        /// <param name="mesh">The <see cref="Mesh"/> to render.</param>
-        /// <param name="model">The transformation <see cref="Matrix4x4"/>.</param>
-        /// <param name="destination">The <see cref="RenderTexture"/> designated as the destination.</param>
-        /// <param name="mat">The <see cref="Material"/> to update.</param>
-        /// <param name="pass">The <see cref="ShaderPass"/> to use.</param>
         public static void RenderTopdownProjection(Mesh mesh, Matrix4x4 model, RenderTexture destination, Material mat, ShaderPass pass)
         {
             RenderTexture prev = RenderTexture.active;

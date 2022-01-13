@@ -2,7 +2,7 @@
 
 Select **Altitude Heatmap** to visualize the height of your Terrain at different levels of elevation. 
 
-![](images/4-41-toolbox-heatmap-01.png)
+![img](images/Toolbox_Visualization_AltitudeHeatmap.png)
 
 | **Property**         | **Description**                                              |
 | -------------------- | ------------------------------------------------------------ |

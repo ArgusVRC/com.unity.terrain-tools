@@ -24,12 +24,7 @@ namespace UnityEditor.TerrainTools
                 if (m_commonUI == null)
                 {
                     LoadSettings();
-                    m_commonUI = new DefaultBrushUIGroup(
-                        "SharpenPeaksTool",
-                        UpdateAnalyticParameters,
-                        DefaultBrushUIGroup.Feature.All,
-                        new DefaultBrushUIGroup.FeatureDefaults { Strength = 0.92f }
-                        );
+                    m_commonUI = new DefaultBrushUIGroup("SharpenPeaksTool", UpdateAnalyticParameters);
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -59,7 +54,7 @@ namespace UnityEditor.TerrainTools
 
         public override string GetDescription()
         {
-            return "Increases the slope of peaks and levels flat areas of the Terrain.";
+            return "Sharpens peak features.";
         }
 
         public override void OnEnterToolMode()
@@ -100,16 +95,12 @@ namespace UnityEditor.TerrainTools
                 if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
+                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
                     var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
                     Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
-                    var filterRT = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height,
-                        0, FilterUtility.defaultFormat);
-                    Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filterRT, previewMaterial);
                     TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
                         editContext.brushTexture, brushXform, previewMaterial, 0);
                     texelCtx.Cleanup();
-                    RTUtils.Release(filterRT);
                 }
             }
         }
@@ -150,7 +141,7 @@ namespace UnityEditor.TerrainTools
 
                     Material mat = GetPaintMaterial();
                     var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                    Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
+                    Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
 
                     // apply brush
                     Vector4 brushParams = new Vector4(

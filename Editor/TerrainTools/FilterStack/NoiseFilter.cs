@@ -4,9 +4,6 @@ using UnityEngine.TerrainTools;
 
 namespace UnityEditor.TerrainTools
 {
-    /// <summary>
-    /// Provides methods for utilizing a NoiseFilter.
-    /// </summary>
     [System.Serializable]
     internal class NoiseFilter : Filter
     {
@@ -33,20 +30,11 @@ namespace UnityEditor.TerrainTools
         private Vector3     m_lastBrushPosition;
         private float       m_lastRotation;
         private Matrix4x4   m_noiseToWorld;
-
-        /// <summary>
-        /// Retrieves the display name of the filter.
-        /// </summary>
-        /// <returns>Returns the display name <c>String</c>  of the filter.</returns>
         public override string GetDisplayName()
         {
             return "Noise";
         }
 
-        /// <summary>
-        /// Retrieves the tool tip of the filter.
-        /// </summary>
-        /// <returns>Retaurns the tooltip <c>String</c> of the filter.</returns>
         public override string GetToolTip()
         {
             return "Applies noise to the brush mask based on the Noise Settings associated with this filter. To edit the noise, press the \"Edit\" or \"E\" button";
@@ -89,8 +77,9 @@ namespace UnityEditor.TerrainTools
             
             // compensate for the difference between the size of the rotated brush and the square noise RT
             var brushTransform = GetBrushTransform(fc);
-            var rect = brushTransform.GetBrushXYBounds();
-            var scaleMultiplier = new Vector2(1.0f / (fc.brushSize/rect.width), 1.0f / (fc.brushSize/rect.height));
+            var scaleMultiplier = new Vector2(
+                1.0f / (fc.brushSize/brushTransform.GetBrushXYBounds().width), 
+                1.0f / (fc.brushSize/brushTransform.GetBrushXYBounds().height));
             
             Quaternion rotQ = Quaternion.AngleAxis( -brushRotation, Vector3.up );
             // accumulate transformation delta
@@ -112,12 +101,11 @@ namespace UnityEditor.TerrainTools
             RTUtils.Release( rt );
 
         }
-
         /// <summary>
         /// Returns a brush transform that can only be used for its size.
         /// </summary>
         /// <param name="fc">filter context for brush size & rotation</param>
-        /// <returns>Returns the brush transform with respect to the brush rotation and size</returns>
+        /// <returns></returns>
         internal static BrushTransform GetBrushTransform(FilterContext fc)
         {
             return GetBrushTransform(fc.brushRotation, fc.brushSize);
@@ -214,7 +202,7 @@ namespace UnityEditor.TerrainTools
 
             if( GUI.Button( editRect, editLabel ) )
             {
-                NoiseWindow wnd = NoiseWindow.Open( m_noiseSettings, m_noiseSource );
+                NoiseWindow wnd = NoiseWindow.Create( m_noiseSettings, m_noiseSource );
                 wnd.noiseEditorView.onSettingsChanged += ( noise ) =>
                 {
                     m_noiseSettings.Copy( noise );
@@ -232,17 +220,11 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        /// <summary>
-        /// Sets properties when the filter is enabled.
-        /// </summary>
         public override void OnEnable()
         {
             m_noiseToWorld = Matrix4x4.identity;
         }
 
-        /// <summary>
-        /// Closes the window and resets properties when the filter is disabled.
-        /// </summary>
         public override void OnDisable()
         {
             if (m_window != null)
@@ -252,10 +234,6 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        /// <summary>
-        /// Retrieves a new list containing noise filter settings.
-        /// </summary>
-        /// <returns>Returns a list of noise settings.</returns>
         public override List<UnityEngine.Object> GetObjectsToSerialize()
         {
             return new List<UnityEngine.Object>() {m_noiseSettings};
