@@ -218,7 +218,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 		{
 			var source = RenderTexture.active;
 			if (source == null)
-				throw new InvalidDataException("Active RenderTexture is null.");
+				throw new Exception("Active RenderTexture is null.");
 
 			int dstWidth = dstTexture.width;
 			int dstHeight = dstTexture.height;
